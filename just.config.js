@@ -1,3 +1,3 @@
-const { taskPresets } = require('just-scripts');
+const { taskPresets } = require("just-scripts");
 
 taskPresets.lib();
