@@ -1,0 +1,39 @@
+{
+  "name": "redwood-core-single",
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "lib-commonjs/index.js",
+  "module": "lib/index.js",
+  "scripts": {
+    "build": "just-scripts build",
+    "just": "just-scripts",
+    "start": "just-scripts start",
+    "test": "jest",
+    "change": "beachball change",
+    "gen": "plop"
+  },
+  "dependencies": {
+    "@babel/plugin-proposal-decorators": "^7.10.1",
+    "@prisma/sdk": "^2.0.0-beta.8",
+    "@redwoodjs/internal": "^0.8.2",
+    "@types/fs-extra": "^9.0.1",
+    "deepmerge": "^4.2.2",
+    "findup-sync": "^4.0.0",
+    "graphql": "^15.0.0",
+    "lazy-get-decorator": "^2.2.0",
+    "lodash-decorators": "^6.0.1",
+    "toml": "^3.0.0",
+    "ts-morph": "^7.1.1",
+    "typescript": "^3.9.5",
+    "vscode-languageserver": "^6.1.1",
+    "vscode-languageserver-textdocument": "^1.0.1",
+    "vscode-languageserver-types": "^3.15.1"
+  },
+  "devDependencies": {
+    "beachball": "^1.12.1",
+    "jest": ">=26 <27",
+    "just-scripts": "^0.43.2",
+    "just-stack-single-lib": "^1.0.11",
+    "ts-jest": "^26.1.0"
+  }
+}
