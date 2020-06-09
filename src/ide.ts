@@ -59,13 +59,30 @@ export interface Hover {
   text: string;
 }
 
+/**
+ * The Diagnostic interface provided by vscode-languageserver-types
+ * does not include the document URI.
+ * This interfaces adds that, and a few other things.
+ */
 export interface DiagnosticWithLocation {
   uri: DocumentUri;
   diagnostic: Diagnostic;
+  /**
+   * A function that returns a quickfix associated to this diagnostic.
+   */
   quickFix?: () => QuickFix;
 }
 
-export type QuickFix = any;
+export type QuickFix = QuickFixEdits | CLICommand;
+
+/**
+ * A very simple representation of a quickfix that changes files
+ * filePath --> newContent | undefined
+ * undefined will remove the file
+ */
+export type QuickFixEdits = Map<string, string | undefined>;
+
+export type CLICommand = string;
 
 export interface OutlineItem {
   /**
@@ -331,13 +348,18 @@ export function Location_fromFilePath(filePath: string): Location {
  * @param node
  * @param message
  */
-export function err(node: tsm.Node, message: string): DiagnosticWithLocation {
+export function err(
+  node: tsm.Node,
+  message: string,
+  code?: number | string
+): DiagnosticWithLocation {
   return {
     uri: `file://${node.getSourceFile().getFilePath()}`,
     diagnostic: {
       range: Range_fromNode(node),
       message,
       severity: DiagnosticSeverity.Error,
+      code,
     },
   };
 }

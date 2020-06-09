@@ -10,6 +10,7 @@ import { Memoize as memo } from "lodash-decorators";
 import { basename, dirname, join } from "path";
 import * as tsm from "ts-morph";
 import { DiagnosticSeverity, Location } from "vscode-languageserver-types";
+import { RWError } from "./errors";
 import {
   basenameNoExt,
   BaseNode,
@@ -397,6 +398,7 @@ export const ${this.field.name.value} = ({${params}}) => {
   @lazy() get quickFixAddDefaultImplEdits() {
     const src = this.parent.service?.sf.getText() || ""; // using ?? breaks wallaby.js
     return new Map([
+      // KLUDGE: we are adding the implementation at the end of the file. we can do better.
       [this.parent.serviceFilePath, src + "\n\n" + this.defaultImplSnippet],
     ]);
   }
@@ -410,8 +412,9 @@ export const ${this.field.name.value} = ({${params}}) => {
           range,
           message: "Service Not Implemented",
           severity: DiagnosticSeverity.Error,
+          code: RWError.SERVICE_NOT_IMPLEMENTED,
         },
-        // quickFix: () => this.quickFixAddDefaultImplEdits,
+        quickFix: () => this.quickFixAddDefaultImplEdits,
       } as DiagnosticWithLocation;
     }
   }
@@ -517,9 +520,15 @@ export class RWRouter extends FileNode {
   }
   *diagnostics() {
     // can a Router have zero notfound pages?
+    // TODO: add quickfix for this one
+    // if there are no notfound pages, create one
     if (this.numNotFoundPages !== 1) {
       if (this.jsxNode)
-        yield err(this.jsxNode, "You must specify exactly one 'notfound' page");
+        yield err(
+          this.jsxNode,
+          "You must specify exactly one 'notfound' page",
+          RWError.NOTFOUND_PAGE_NOT_DEFINED
+        );
     }
   }
   children() {
@@ -631,9 +640,15 @@ export class RWRoute extends BaseNode implements OutlineItem {
 
   *diagnostics() {
     if (this.page_identifier && !this.page)
+      // normally this would be caught by TypeScript
+      // but Redwood has some "magic" import behavior going on
       yield err(this.page_identifier, "Page component not found");
     if (this.path_errorMessage && this.path_literal_node)
-      yield err(this.path_literal_node, this.path_errorMessage);
+      yield err(
+        this.path_literal_node,
+        this.path_errorMessage,
+        RWError.INVALID_ROUTE_PATH_SYNTAX
+      );
     if (this.hasPathCollision)
       yield err(this.path_literal_node!, "Duplicate Path");
     if (this.isAuthenticated && this.isNotFound)

@@ -1,6 +1,7 @@
 import { resolve } from "path";
 import { DefaultHost, OutlineItems_toJSON } from "../ide";
 import { RWProject } from "../project";
+import { RWError } from "../errors";
 
 describe("redwood project", () => {
   it("example-todo-master", async () => {
@@ -38,8 +39,9 @@ describe("redwood project", () => {
     const project = new RWProject({ projectRoot, host: new DefaultHost() });
     const ds = await project.getAllDiagnostics();
     ds.length; //?
-    for (const d of ds) {
-      d.diagnostic.message; //?
-    }
+    const diagnosticCodes = new Set(ds.map((d) => d.diagnostic.code));
+    expect(diagnosticCodes).toEqual(
+      new Set([RWError.NOTFOUND_PAGE_NOT_DEFINED])
+    );
   });
 });
