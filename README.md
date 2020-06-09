@@ -1,10 +1,10 @@
-Note: This will eventually be donated/integrated into @redwoodjs/redwood.
+Note: This will eventually be moved to @redwoodjs/internal.
 
 # Overview
 
-- `/project`: The main API and classes (such as Project, Page, Service, Side, etc)
-- `/language-server`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
-- `/typescript-language-service-plugin`: A TypeScript language service plugin for redwood.
+- `/project.ts`: The main API and classes (such as Project, Page, Service, Side, etc)
+- `/language-server.ts`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
+- TODO: `/typescript-language-service-plugin`: A TypeScript language service plugin for redwood.
 
 Eventually these modules could be published as independent packages.
 
@@ -13,7 +13,7 @@ Eventually these modules could be published as independent packages.
 The most common use-case is getting the diagnostics of a complete redwood project:
 
 ```ts
-import { Project } from "@redwoodjs/project";
+import { Project } from "./project";
 const project = new Project({ projectRoot: "/foo/bar" });
 for (const d of project.diagnostics) {
   console.log(d.severity + ": " + d.message);
@@ -33,7 +33,7 @@ You can also traverse the graph to get more specific information.
 For example: Iterating over the routes of a redwood project:
 
 ```ts
-import { Project } from "@redwoodjs/project";
+import { Project } from "./project";
 const project = new Project({ projectRoot: "/foo/bar" });
 for (const route of project.web.router.routes) {
   console.log(route.path + (route.isPrivate ? " (private)" : ""));
@@ -47,7 +47,7 @@ for (const route of project.web.router.routes) {
 You can also get nodes by `id`. For example:
 
 ```ts
-import { Project } from "@redwoodjs/project";
+import { Project } from "./project";
 const project = new Project({ projectRoot: "/foo/bar" });
 const router = project.findNode("/foo/bar/web/src/Routes.js");
 ```
@@ -57,7 +57,7 @@ const router = project.findNode("/foo/bar/web/src/Routes.js");
 In most cases, if you just want to get the node for a given file, you don't even need to create a project by hand:
 
 ```ts
-import { findNode } from "@redwoodjs/project";
+import { findNode } from "./project";
 findNode("/foo/bar/web/src/Routes.js")?.diagnostics?.length; // 8
 ```
 
@@ -107,7 +107,7 @@ Anatomy of an id:
 - Having said that, the graph also provides some ways of modifying your Redwood apps. For example:
 
 ```ts
-import { Project } from "@redwoodjs/model";
+import { Project } from "./project";
 const project = new Project({ projectRoot: "/foo/bar" });
 // lets find the "/home" page and delete it
 const home = project.web?.router?.routes?.find((r) => r.path === "/home");
@@ -123,7 +123,7 @@ Some diagnostics provide a "quickFix", which is a list of edits that will "fix" 
 For example, let's create an empty "page" file and then get its diagnostics:
 
 ```ts
-import { findNode } from "@redwoodjs/model";
+import { findNode } from "./project";
 const pageNode = findNode("/foo/bar/web/src/pages/AboutUs/AboutUs.js");
 pageNode.diagnostics[0].message; // this Page is empty
 pageNode.diagnostics[0].quickFix.edits; // a list of edits to fix the problem
@@ -152,7 +152,7 @@ Instead of relying on the low level API (the nodes themselves), which are consta
 - Get the diagnostics of a complete project
 
 ```ts
-import { getDiagnostics } from "@redwoodjs/model";
+import { getDiagnostics } from "./api";
 async function example() {
   const diagnostics = await getDiagnostics("path/to/my/project");
   for (const d of diagnostics) {
