@@ -16,7 +16,7 @@ The most common use-case is getting the diagnostics of a complete redwood projec
 import { Project } from "./project";
 const project = new Project({ projectRoot: "/foo/bar" });
 for (const d of project.diagnostics) {
-  console.log(d.severity + ": " + d.message);
+  console.log(d.diagnostic.severity + ": " + d.diagnostic.message);
 }
 // ...
 // error: Router must have only one "notfound" page
