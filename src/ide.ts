@@ -22,7 +22,7 @@ export interface Host {
   globSync(pattern: string): string[];
 }
 
-export type IDEStuff =
+export type IDEInfo =
   | Definition
   | Implementation
   | Reference
@@ -211,7 +211,7 @@ export abstract class BaseNode {
     return Many_normalize(this.diagnostics());
   }
 
-  ideStuff(): Many<IDEStuff> {
+  ideInfo(): Many<IDEInfo> {
     return [];
   }
 

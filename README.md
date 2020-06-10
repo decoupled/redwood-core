@@ -3,7 +3,7 @@ Note: This will eventually be moved to @redwoodjs/internal.
 # Overview
 
 - `/project.ts`: The main API and classes (such as Project, Page, Service, Side, etc)
-- `/language-server.ts`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
+- TODO: `/language-server.ts`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
 - TODO: `/typescript-language-service-plugin`: A TypeScript language service plugin for redwood.
 
 Eventually these modules could be published as independent packages.

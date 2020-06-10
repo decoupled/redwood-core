@@ -9,7 +9,11 @@ import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Memoize as memo } from "lodash-decorators";
 import { basename, dirname, join } from "path";
 import * as tsm from "ts-morph";
-import { DiagnosticSeverity, Location } from "vscode-languageserver-types";
+import {
+  DiagnosticSeverity,
+  Location,
+  Range,
+} from "vscode-languageserver-types";
 import { RWError } from "./errors";
 import {
   basenameNoExt,
@@ -37,6 +41,12 @@ export interface RWProjectOptions {
   projectRoot: string;
   host: Host;
 }
+
+const allFilesGlob = "/**/*.{js,jsx,ts,tsx}";
+const fullDocRange: Range = {
+  start: { line: 0, character: 0 },
+  end: { line: 0, character: 0 },
+};
 
 /**
  * Represents a Redwood project.
@@ -137,25 +147,21 @@ export class RWProject extends BaseNode implements OutlineItem {
 
   @lazy() get services() {
     // TODO: what is the official logic?
-    this.host.globSync(this.pathHelper.api.services + "/**/*.{js,jsx,ts,tsx}"); //?
     return this.host
-      .readdirSync(this.pathHelper.api.services)
-      .filter((x) => !x.startsWith("."))
-      .map((x) => this.servicesFilePath(x))
+      .globSync(this.pathHelper.api.services + allFilesGlob)
+      .filter(followsDirNameConvention)
       .map((x) => new RWService(x, this));
   }
 
   @lazy() get sdls() {
     return this.host
-      .readdirSync(this.pathHelper.api.graphql)
-      .filter((x) => !x.startsWith("."))
-      .map((x) => join(this.pathHelper.api.graphql, x))
+      .globSync(this.pathHelper.api.graphql + "/**/*.sdl.{js,jsx,ts,tsx}")
       .map((x) => new RWSDL(x, this));
   }
 
   @lazy() get layouts(): RWLayout[] {
     return this.host
-      .globSync(this.pathHelper.web.layouts + "/**/*.{js,jsx,ts,tsx}")
+      .globSync(this.pathHelper.web.layouts + allFilesGlob)
       .filter(followsDirNameConvention)
       .filter(isLayoutFileName)
       .map((x) => new RWLayout(x, this));
@@ -163,19 +169,17 @@ export class RWProject extends BaseNode implements OutlineItem {
 
   @lazy() get functions(): RWFunction[] {
     return this.host
-      .globSync(this.pathHelper.api.functions + "/**/*.{js,jsx,ts,tsx}")
+      .globSync(this.pathHelper.api.functions + allFilesGlob)
       .map((x) => new RWFunction(x, this));
   }
 
   @lazy() get components(): RWComponent[] {
     return this.host
-      .globSync(this.pathHelper.web.components + "/**/*.{js,jsx,ts,tsx}")
+      .globSync(this.pathHelper.web.components + allFilesGlob)
       .filter(followsDirNameConvention)
-      .map((x) => {
-        return isCellFileName(x)
-          ? new RWCell(x, this)
-          : new RWComponent(x, this);
-      });
+      .map((x) =>
+        isCellFileName(x) ? new RWCell(x, this) : new RWComponent(x, this)
+      );
   }
 }
 
@@ -300,6 +304,7 @@ export class RWSDL extends FileNode {
   @lazy() get schemaStringNode() {
     const i = this.sf.getVariableDeclaration("schema")?.getInitializer();
     if (!i) return undefined;
+    // TODO: do we allow other kinds of strings? or just tagged literals?
     if (tsm.Node.isTaggedTemplateExpression(i)) {
       const t = i.getTemplate(); //?
       if (tsm.Node.isNoSubstitutionTemplateLiteral(t)) return t;
@@ -337,6 +342,20 @@ export class RWSDL extends FileNode {
   children() {
     return [...this.implementableFields];
   }
+  *diagnostics() {
+    if (!this.schemaStringNode) {
+      yield {
+        uri: this.uri,
+        diagnostic: {
+          range: fullDocRange,
+          message:
+            "Each SDL file must export a variable named 'schema' with a GraphQL schema string",
+          severity: DiagnosticSeverity.Error,
+          code: RWError.SCHEMA_NOT_DEFINED,
+        },
+      } as DiagnosticWithLocation;
+    }
+  }
 }
 
 export class RWSDLField extends BaseNode implements OutlineItem {
@@ -370,7 +389,7 @@ export class RWSDLField extends BaseNode implements OutlineItem {
   @lazy() get outlineAction() {
     return this.location;
   }
-  *ideStuff() {
+  *ideInfo() {
     if (this.impl) {
       yield {
         kind: "Implementation",
@@ -395,6 +414,7 @@ export const ${this.field.name.value} = ({${params}}) => {
   // TODO: implement
 }`;
   }
+
   @lazy() get quickFixAddDefaultImplEdits() {
     const src = this.parent.service?.sf.getText() || ""; // using ?? breaks wallaby.js
     return new Map([
@@ -509,7 +529,7 @@ export class RWRouter extends FileNode {
   @lazy() private get numNotFoundPages(): number {
     return this.routes.filter((r) => r.isNotFound).length;
   }
-  *ideStuff() {
+  *ideInfo() {
     // if (this.jsxNode) {
     //   let location = Location_fromNode(this.jsxNode)
     //   if (this.routes.length > 0) {
@@ -659,7 +679,7 @@ export class RWRoute extends BaseNode implements OutlineItem {
         "The 'Not Found' page cannot have a path"
       );
   }
-  *ideStuff() {
+  *ideInfo() {
     // definition: page identifier --> page
     if (this.page && this.page_identifier) {
       yield {

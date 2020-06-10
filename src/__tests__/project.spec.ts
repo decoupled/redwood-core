@@ -43,5 +43,8 @@ describe("redwood project", () => {
     expect(diagnosticCodes).toEqual(
       new Set([RWError.NOTFOUND_PAGE_NOT_DEFINED])
     );
+    project.router.filePath; //?
+    const dss = await project.router.getAllDiagnostics();
+    expect(dss.length).toEqual(1);
   });
 });
