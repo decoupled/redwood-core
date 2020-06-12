@@ -4,9 +4,7 @@ Note: This will eventually be moved to @redwoodjs/internal.
 
 - `/project.ts`: The main API and classes (such as Project, Page, Service, Side, etc)
 - TODO: `/language-server.ts`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
-- TODO: `/typescript-language-service-plugin`: A TypeScript language service plugin for redwood.
-
-Eventually these modules could be published as independent packages.
+- TODO: `/typescript-language-service-plugin`: A TypeScript language service plugin for Redwood.
 
 # Usage
 
@@ -14,9 +12,11 @@ The most common use-case is getting the diagnostics of a complete redwood projec
 
 ```ts
 import { Project } from "./project";
-const project = new Project({ projectRoot: "/foo/bar" });
-for (const d of project.diagnostics) {
-  console.log(d.diagnostic.severity + ": " + d.diagnostic.message);
+async function test() {
+  const project = new Project({ projectRoot: "/foo/bar" });
+  for (const d of await project.getAllDiagnostics()) {
+    console.log(d.diagnostic.severity + ": " + d.diagnostic.message);
+  }
 }
 // ...
 // error: Router must have only one "notfound" page
@@ -134,38 +134,8 @@ You can apply the edits
 
 ## Abstracting File System Access
 
-To allow use cases like dealing with unsaved files in IDEs, the filesystem access can be completely overriden.
-
-Libraries with native/expensive dependencies (like prisma, or graphql) must also be injected via the host. This allows us to use the redwood project model, without modification, in the browser.
+To allow use cases like dealing with unsaved files in IDEs, some filesystem methods can be overriden via the Host interface.
 
 ## Sync VS Async
 
 When possible, the project graph is constructed synchronously. There are only a few exceptions. This simplifies the domain logic and validations, which is the main driver behind the project model itself.
-The downside of this is that, when using the project model aggressively.... this can be solved by providing a cached filesystem access layer.
-
-# High level, stable, use-case specific APIs
-
-Instead of relying on the low level API (the nodes themselves), which are constantly changing as we add more features into redwood, we also provide a few use-case specific APIs that should be significantly stable:
-
-## getDiagnostics
-
-- Get the diagnostics of a complete project
-
-```ts
-import { getDiagnostics } from "./api";
-async function example() {
-  const diagnostics = await getDiagnostics("path/to/my/project");
-  for (const d of diagnostics) {
-    const {
-      message,
-      severity,
-      loc: { file, start, end },
-    } = d;
-  }
-}
-```
-
-## getOutline
-
-For IDEs and navigation
-TODO:
