@@ -19,7 +19,7 @@ import {
   basenameNoExt,
   BaseNode,
   Definition,
-  DiagnosticWithLocation,
+  ExtendedDiagnostic,
   err,
   FileNode,
   Host,
@@ -223,6 +223,9 @@ export class RWComponent extends FileNode {
 export class RWCell extends RWComponent {
   // TODO: diagnostic: a cell must export certain members...
   isCell = true;
+  *diagnostics() {
+    //
+  }
 }
 
 export class RWService extends FileNode implements OutlineItem {
@@ -353,7 +356,7 @@ export class RWSDL extends FileNode {
           severity: DiagnosticSeverity.Error,
           code: RWError.SCHEMA_NOT_DEFINED,
         },
-      } as DiagnosticWithLocation;
+      } as ExtendedDiagnostic;
     }
   }
 }
@@ -434,8 +437,8 @@ export const ${this.field.name.value} = ({${params}}) => {
           severity: DiagnosticSeverity.Error,
           code: RWError.SERVICE_NOT_IMPLEMENTED,
         },
-        quickFix: () => this.quickFixAddDefaultImplEdits,
-      } as DiagnosticWithLocation;
+        quickFix: async () => this.quickFixAddDefaultImplEdits,
+      } as ExtendedDiagnostic;
     }
   }
 }
@@ -453,6 +456,9 @@ export class RWPage extends FileNode implements OutlineItem {
   }
   @lazy() get outlineLabel() {
     return this.basenameNoExt;
+  }
+  @lazy() get outlineDescription() {
+    return basename(this.filePath);
   }
   @lazy() get outlineAction() {
     return this.filePath;

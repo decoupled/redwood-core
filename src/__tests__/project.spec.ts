@@ -19,6 +19,11 @@ describe("redwood project", () => {
       page.basenameNoExt; //?
       page.route?.id; //?
     }
+    project.sdls.length; //?
+    project.sdls[0].name; //?
+    for (const c of project.components) {
+      c.basenameNoExt; //?
+    }
     project.components.length; //?
     project.components.map((c) => c.basenameNoExt); //?
     project.functions.length; //?

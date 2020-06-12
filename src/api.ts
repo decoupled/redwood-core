@@ -1,11 +1,11 @@
-import { DefaultHost, DiagnosticWithLocation, Host, OutlineItem } from "./ide";
+import { DefaultHost, ExtendedDiagnostic, Host, OutlineItem } from "./ide";
 import { RWProject } from "./project";
 
 export async function getDiagnostics(
   projectRoot: string,
   filePath?: string | undefined,
   host: Host = new DefaultHost()
-): Promise<DiagnosticWithLocation[]> {
+): Promise<ExtendedDiagnostic[]> {
   const project = new RWProject({ projectRoot, host });
   if (!filePath) return await project.getAllDiagnostics();
   const node = await project.findNode(filePath);

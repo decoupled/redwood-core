@@ -60,17 +60,17 @@ export interface Hover {
 }
 
 /**
- * The Diagnostic interface provided by vscode-languageserver-types
+ * The Diagnostic interface defined in vscode-languageserver-types
  * does not include the document URI.
  * This interfaces adds that, and a few other things.
  */
-export interface DiagnosticWithLocation {
+export interface ExtendedDiagnostic {
   uri: DocumentUri;
   diagnostic: Diagnostic;
   /**
    * A function that returns a quickfix associated to this diagnostic.
    */
-  quickFix?: () => QuickFix;
+  quickFix?: () => Promise<QuickFix>;
 }
 
 export type QuickFix = QuickFixEdits | CLICommand;
@@ -101,10 +101,10 @@ export interface OutlineItem {
   /**
    *
    */
-  outlineIcon?: OutlineIcon;
+  // outlineIcon?: OutlineIcon;
   outlineTooltip?: string;
   /**
-   * What to do when the item is clicked.
+   * What to do when the item is clicked/navigated to
    * - Passing a FilePath or a Location will result in the IDE navigating
    * - A CLIAction (string) will call the Redwood CLI
    */
@@ -118,13 +118,13 @@ export interface OutlineItem {
 
 export type Action = DocumentUri | Location | CLIAction | (() => {});
 
-export type OutlineIcon =
-  | "redwood"
-  | "netlify"
-  | "page"
-  | "page-private"
-  | "route"
-  | "route-private";
+// export type OutlineIcon =
+//   | "redwood"
+//   | "netlify"
+//   | "page"
+//   | "page-private"
+//   | "route"
+//   | "route-private";
 
 /**
  * A command to send the redwood CLI
@@ -156,7 +156,7 @@ export async function OutlineItem_toJSON(item: OutlineItem) {
     outlineLabel: item.outlineLabel,
     outlineDescription: item.outlineDescription,
     id: item.id,
-    outlineIcon: item.outlineIcon,
+    // outlineIcon: item.outlineIcon,
     outlineTooltip: item.outlineTooltip,
     outlineAction: item.outlineAction,
   };
@@ -204,7 +204,7 @@ export abstract class BaseNode {
    * Diagnostics for this node (must not include children's diagnostics).
    * Override this.
    */
-  diagnostics(): Many<DiagnosticWithLocation> {
+  diagnostics(): Many<ExtendedDiagnostic> {
     return [];
   }
   @memo() private _diagnostics() {
@@ -220,7 +220,7 @@ export abstract class BaseNode {
    * This is what you'll use to gather all the project diagnostics.
    */
   @memo()
-  async getAllDiagnostics(): Promise<DiagnosticWithLocation[]> {
+  async getAllDiagnostics(): Promise<ExtendedDiagnostic[]> {
     // TODO: catch runtime errors and add them as diagnostics
     const d1 = await this._diagnostics();
     const dd = await Promise.all(
@@ -352,7 +352,7 @@ export function err(
   node: tsm.Node,
   message: string,
   code?: number | string
-): DiagnosticWithLocation {
+): ExtendedDiagnostic {
   return {
     uri: `file://${node.getSourceFile().getFilePath()}`,
     diagnostic: {
@@ -369,7 +369,7 @@ export function err(
  * @param node
  * @param message
  */
-export function warn(node: tsm.Node, message: string): DiagnosticWithLocation {
+export function warn(node: tsm.Node, message: string): ExtendedDiagnostic {
   return {
     uri: `file://${node.getSourceFile().getFilePath()}`,
     diagnostic: {

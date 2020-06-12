@@ -10,18 +10,23 @@
     "start": "just-scripts start",
     "test": "jest",
     "change": "beachball change",
-    "gen": "plop"
+    "gen": "plop",
+    "print-outline": "ts-node src/print-outline.tsx"
   },
   "dependencies": {
     "@babel/plugin-proposal-decorators": "^7.10.1",
     "@prisma/sdk": "^2.0.0-beta.8",
     "@redwoodjs/internal": "^0.8.2",
     "@types/fs-extra": "^9.0.1",
+    "@types/react": "^16.9.36",
     "deepmerge": "^4.2.2",
     "findup-sync": "^4.0.0",
     "graphql": "^15.0.0",
+    "ink": "^2.7.1",
     "lazy-get-decorator": "^2.2.0",
     "lodash-decorators": "^6.0.1",
+    "react": "^16.13.1",
+    "react-async-hook": "^3.6.1",
     "toml": "^3.0.0",
     "ts-morph": "^7.1.1",
     "typescript": "^3.9.5",
@@ -34,6 +39,7 @@
     "jest": ">=26 <27",
     "just-scripts": "^0.43.2",
     "just-stack-single-lib": "^1.0.11",
-    "ts-jest": "^26.1.0"
+    "ts-jest": "^26.1.0",
+    "ts-node": "^8.10.2"
   }
 }
