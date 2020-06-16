@@ -11,7 +11,7 @@
     "test": "jest",
     "change": "beachball change",
     "gen": "plop",
-    "print-outline": "ts-node src/print-outline.tsx"
+    "analyze": "ts-node src/analyze.tsx"
   },
   "dependencies": {
     "@babel/plugin-proposal-decorators": "^7.10.1",

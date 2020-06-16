@@ -62,7 +62,7 @@ export interface Hover {
 /**
  * The Diagnostic interface defined in vscode-languageserver-types
  * does not include the document URI.
- * This interfaces adds that, and a few other things.
+ * This interface adds that, and a few other things.
  */
 export interface ExtendedDiagnostic {
   uri: DocumentUri;

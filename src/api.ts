@@ -16,6 +16,8 @@ export async function getDiagnostics(
   return [];
 }
 
+export async function printDiagnostics() {}
+
 // TODO
 export async function getOutline(
   projectRoot: string,

@@ -1,4 +1,5 @@
 import { getDMMF } from "@prisma/sdk";
+// TODO: re-implement a higher quality version of these in ./project
 import { getPaths, processPagesDir } from "@redwoodjs/internal/dist/paths";
 import {
   FieldDefinitionNode,
@@ -19,8 +20,8 @@ import {
   basenameNoExt,
   BaseNode,
   Definition,
-  ExtendedDiagnostic,
   err,
+  ExtendedDiagnostic,
   FileNode,
   Host,
   Implementation,
@@ -95,7 +96,7 @@ export class RWProject extends BaseNode implements OutlineItem {
 
   children() {
     return [
-      this.redwood_toml,
+      this.redwoodTOML,
       ...this.pages,
       this.router,
       ...this.services,
@@ -119,16 +120,16 @@ export class RWProject extends BaseNode implements OutlineItem {
     return this.host.existsSync(join(this.projectRoot, "tsconfig.json"));
   }
   // TODO: do we move this to a separate node? (ex: RWDatabase)
-  @memo() async prisma_dmmf() {
+  @memo() async prismaDMMF() {
     return await getDMMF({
       datamodel: this.host.readFileSync(this.pathHelper.api.dbSchema),
     });
   }
-  @memo() async prisma_dmmf_modelNames() {
-    return (await this.prisma_dmmf()).datamodel.models.map((m) => m.name);
+  @memo() async prismaDMMFModelNames() {
+    return (await this.prismaDMMF()).datamodel.models.map((m) => m.name);
   }
-  @lazy() get redwood_toml(): RWTOML {
-    return new RWTOML(join(this.projectRoot, "netlify.toml"), this);
+  @lazy() get redwoodTOML(): RWTOML {
+    return new RWTOML(join(this.projectRoot, "redwood.toml"), this);
   }
   @lazy() private get processPagesDir() {
     return processPagesDir(this.pathHelper.web.pages);
@@ -485,6 +486,7 @@ export class RWPage extends FileNode implements OutlineItem {
     edits.set(dirname(this.filePath), undefined);
     // removing a page also removes its route
     if (this.route) edits.set(this.route.jsxNode, undefined);
+    // TODO: we need to transform this edits map to a standard edits map (with locations)
     return edits;
   }
   // TODO: parameters

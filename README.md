@@ -2,6 +2,12 @@ Note: This will eventually be moved to @redwoodjs/internal.
 
 # Overview
 
+- Main validation layer/model for Redwood (used by the Redwood CLI and other tools)
+- Used by Decoupled Studio to provide IDE features
+- Other IDEs can leverage language-server.ts
+
+# Structure
+
 - `/project.ts`: The main API and classes (such as Project, Page, Service, Side, etc)
 - TODO: `/language-server.ts`: A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation that wraps the `project` classes
 - TODO: `/typescript-language-service-plugin`: A TypeScript language service plugin for Redwood.
