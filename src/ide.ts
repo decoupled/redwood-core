@@ -264,6 +264,9 @@ export abstract class FileNode extends BaseNode {
   @lazy() get text() {
     return this.host.readFileSync(this.filePath);
   }
+  @lazy() get fileExists(): boolean {
+    return this.host.existsSync(this.filePath);
+  }
   /**
    * parsed ts-morph source file
    */

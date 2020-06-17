@@ -642,6 +642,22 @@ export class RWRouter extends FileNode {
     // }
   }
   *diagnostics() {
+    if (!this.fileExists) {
+      // should we assign this error to the project? to redwood.toml?
+      const uri = `file://${this.parent.projectRoot}/redwood.toml`;
+      const message = `Routes.js does not exist`;
+      yield {
+        uri,
+        diagnostic: {
+          range: fullDocRange, // maybe only to the "web" property in the toml file?
+          message,
+          severity: DiagnosticSeverity.Error,
+        },
+      } as ExtendedDiagnostic;
+      // TODO: add quickFix (create a simple Routes.js)
+      return; // stop checking for errors if the file doesn't exist
+    }
+
     // can a Router have zero notfound pages?
     // TODO: add quickfix for this one
     // if there are no notfound pages, create one
