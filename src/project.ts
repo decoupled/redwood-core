@@ -370,13 +370,27 @@ export class RWServiceFunction extends BaseNode {
       // parameter names should match
       const p1 = this.sdlField.argumentNames.sort().join(" "); //?
       const p2 = this.parameterNames.sort().join(" "); //?
-      const locationNode = this.node.getParameters()[0] ?? this.node;
       if (p1 !== p2) {
-        yield err(
-          locationNode,
-          `Parameter mismatch between SDL and implementation ("${p1}" !== "${p2}")`
-        );
+        const locationNode = this.node.getParameters()[0] ?? this.node;
+        const { uri, range } = Location_fromNode(locationNode);
+        const message = `Parameter mismatch between SDL and implementation ("${p1}" !== "${p2}")`;
+        yield {
+          uri,
+          diagnostic: {
+            range,
+            message,
+            severity: DiagnosticSeverity.Error,
+            // add related information so developers can jump to the SDL definition
+            relatedInformation: [
+              {
+                location: this.sdlField.location,
+                message: "SDL field is defined here",
+              },
+            ],
+          },
+        } as ExtendedDiagnostic;
       }
+
       // TODO: check that types match
       // to do this it is probably easier to leverage a graphql code generator and the typescript compiler
       // the trick is to create a source file with an interface assignment that will fail if there is a mismatch
@@ -461,7 +475,7 @@ export class RWSDLField extends BaseNode implements OutlineItem {
    * The location of this field.
    * Calculating this is slightly complicated since it is embedded within a TaggedTemplateLiteral
    */
-  @lazy() private get location(): Location {
+  @lazy() get location(): Location {
     let { start, end } = this.field.loc!;
     const node = this.parent.schemaStringNode!;
     start += node.getPos() + 1; // we add one to account for the quote (`)
