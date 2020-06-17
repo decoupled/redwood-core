@@ -9,6 +9,7 @@ import { parse as parseGraphQL } from "graphql/language/parser";
 import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Memoize as memo } from "lodash-decorators";
 import { basename, dirname, join } from "path";
+import { parse as parseTOML } from "toml";
 import * as tsm from "ts-morph";
 import {
   DiagnosticSeverity,
@@ -148,6 +149,7 @@ export class RWProject extends BaseNode implements OutlineItem {
 
   @lazy() get services() {
     // TODO: what is the official logic?
+    // TODO: Support both `/services/todos/todos.js` AND `/services/todos.js`
     return this.host
       .globSync(this.pathHelper.api.services + allFilesGlob)
       .filter(followsDirNameConvention)
@@ -155,12 +157,14 @@ export class RWProject extends BaseNode implements OutlineItem {
   }
 
   @lazy() get sdls() {
+    // TODO: what is the official logic?
     return this.host
       .globSync(this.pathHelper.api.graphql + "/**/*.sdl.{js,jsx,ts,tsx}")
       .map((x) => new RWSDL(x, this));
   }
 
   @lazy() get layouts(): RWLayout[] {
+    // TODO: what is the official logic?
     return this.host
       .globSync(this.pathHelper.web.layouts + allFilesGlob)
       .filter(followsDirNameConvention)
@@ -169,12 +173,14 @@ export class RWProject extends BaseNode implements OutlineItem {
   }
 
   @lazy() get functions(): RWFunction[] {
+    // TODO: what is the official logic?
     return this.host
       .globSync(this.pathHelper.api.functions + allFilesGlob)
       .map((x) => new RWFunction(x, this));
   }
 
   @lazy() get components(): RWComponent[] {
+    // TODO: what is the official logic?
     return this.host
       .globSync(this.pathHelper.web.components + allFilesGlob)
       .filter(followsDirNameConvention)
@@ -192,6 +198,31 @@ export class RWTOML extends FileNode {
   //   return TOML.parse(this.text)
   // }
   // TODO: diagnostics
+  @lazy() get parsedTOML() {
+    return parseTOML(this.text);
+  }
+  *diagnostics() {
+    try {
+      this.parsedTOML;
+    } catch (e) {
+      yield {
+        uri: this.uri,
+        diagnostic: {
+          range: {
+            start: { line: e.line, character: e.column },
+            end: { line: e.line, character: e.column },
+          },
+          message: "TOML Parser Error: " + e.message,
+          severity: DiagnosticSeverity.Error,
+        },
+      } as ExtendedDiagnostic;
+      return;
+    }
+    // at this point we know that the TOML was parsed successfully
+    this.parsedTOML; //?
+    const allowedTopElements = ["web", "api"];
+    // TODO: check that schema is correct
+  }
 }
 
 /**
@@ -225,7 +256,40 @@ export class RWCell extends RWComponent {
   // TODO: diagnostic: a cell must export certain members...
   isCell = true;
   *diagnostics() {
-    //
+    const exportedSymbols = new Set<string>();
+    for (const d of this.sf.getDescendantsOfKind(
+      tsm.SyntaxKind.VariableDeclaration
+    )) {
+      if (d.isExported()) {
+        exportedSymbols.add(d.getName());
+      }
+    }
+    // check that QUERY and Success are exported
+    if (!exportedSymbols.has("QUERY")) {
+      yield {
+        uri: this.uri,
+        diagnostic: {
+          range: fullDocRange,
+          message:
+            "Every Cell MUST export a QUERY variable (GraphQL query string)",
+          severity: DiagnosticSeverity.Error,
+        },
+      } as ExtendedDiagnostic;
+    }
+    // TODO: check that exported QUERY is a TaggedTemplateLiteral
+    // TODO: check that exported QUERY is syntactically valid GraphQL
+    // TODO: check that exported QUERY is semantically valid GraphQL (fields exist)
+    if (!exportedSymbols.has("Success")) {
+      yield {
+        uri: this.uri,
+        diagnostic: {
+          range: fullDocRange,
+          message:
+            "Every Cell MUST export a Success variable (React Component)",
+          severity: DiagnosticSeverity.Error,
+        },
+      } as ExtendedDiagnostic;
+    }
   }
 }
 
@@ -260,15 +324,14 @@ export class RWService extends FileNode implements OutlineItem {
     for (const vd of this.sf.getVariableDeclarations()) {
       if (vd.isExported()) {
         const init = vd.getInitializerIfKind(tsm.SyntaxKind.ArrowFunction);
-        if (init)
-          yield new RWServiceFunction(vd.getName(), vd.getNameNode(), this);
+        if (init) yield new RWServiceFunction(vd.getName(), init, this);
       }
     }
     // export function foo(){}
     for (const fd of this.sf.getFunctions()) {
       if (fd.isExported() && !fd.isDefaultExport()) {
         const nn = fd.getNameNode();
-        if (nn) yield new RWServiceFunction(nn.getText(), nn, this);
+        if (nn) yield new RWServiceFunction(nn.getText(), fd, this);
       }
     }
   }
@@ -277,7 +340,7 @@ export class RWService extends FileNode implements OutlineItem {
 export class RWServiceFunction extends BaseNode {
   constructor(
     public name: string,
-    public node: tsm.Node,
+    public node: tsm.FunctionDeclaration | tsm.ArrowFunction,
     public parent: RWService
   ) {
     super();
@@ -289,13 +352,42 @@ export class RWServiceFunction extends BaseNode {
 
   /**
    * The SDL field that this function implements, if any
+   * TODO: describe this in prose.
    */
   @lazy() get sdlField(): RWSDLField | undefined {
     return this.parent.sdl?.implementableFields?.find(
       (f) => f.name === this.name
     );
   }
-  // TODO: diagnostic: if this function implements an SDL field, make sure parameter names match
+  private *_parameterNames() {
+    for (const p of this.node.getParameters()) {
+      const nn = p.getNameNode();
+      if (nn instanceof tsm.ObjectBindingPattern) {
+        for (const element of nn.getElements()) {
+          yield element.getNameNode().getText();
+        }
+      }
+    }
+  }
+  @lazy() get parameterNames() {
+    return [...this._parameterNames()];
+  }
+
+  *diagnostics() {
+    if (this.sdlField) {
+      // this service function is implementing a field
+      // parameter names should match
+      const p1 = this.sdlField.argumentNames.sort().join(" "); //?
+      const p2 = this.parameterNames.sort().join(" "); //?
+      const locationNode = this.node.getParameters()[0] ?? this.node;
+      if (p1 !== p2) {
+        yield err(
+          locationNode,
+          `Parameter mismatch between SDL and implementation ("${p1}" !== "${p2}")`
+        );
+      }
+    }
+  }
 }
 
 export class RWSDL extends FileNode {
@@ -386,6 +478,9 @@ export class RWSDLField extends BaseNode implements OutlineItem {
   }
   @lazy() get name() {
     return this.field.name.value;
+  }
+  @lazy() get argumentNames() {
+    return (this.field.arguments ?? []).map((a) => a.name.value); //?
   }
   @lazy() get outlineLabel() {
     return this.name;
@@ -583,6 +678,12 @@ export class RWRoute extends BaseNode implements OutlineItem {
 
   @lazy() get isAuthenticated() {
     return false; // TODO
+  }
+
+  @lazy() get hasParameters(): boolean {
+    if (!this.path) return false;
+    // KLUDGE: we need a good path parsing library here
+    return this.path.includes("{");
   }
 
   @lazy() get outlineLabel(): string {
