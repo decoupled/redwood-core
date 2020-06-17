@@ -729,6 +729,11 @@ export class RWRoute extends BaseNode implements OutlineItem {
     return this.path.includes("{");
   }
 
+  @lazy() get hasPreRenderInfo() {
+    // TODO: this is just a placeholder / reminder
+    return false;
+  }
+
   @lazy() get outlineLabel(): string {
     if (this.isNotFound) return "404";
     return this.path ?? "";
@@ -825,6 +830,11 @@ export class RWRoute extends BaseNode implements OutlineItem {
       yield err(
         this.path_literal_node!,
         "The 'Not Found' page cannot have a path"
+      );
+    if (this.hasPreRenderInfo && !this.hasParameters)
+      yield err(
+        this.jsxNode!, // TODO: point to the preRender attribute AST node
+        `Only routes with parameters can have associated pre-render information`
       );
   }
   *ideInfo() {
