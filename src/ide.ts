@@ -222,6 +222,7 @@ export abstract class BaseNode {
   @memo()
   async getAllDiagnostics(): Promise<ExtendedDiagnostic[]> {
     // TODO: catch runtime errors and add them as diagnostics
+    // TODO: we can parallelize this further
     const d1 = await this._diagnostics();
     const dd = await Promise.all(
       (await this._children()).map((c) => c.getAllDiagnostics())
@@ -346,20 +347,35 @@ export function Location_fromFilePath(filePath: string): Location {
   return { uri: `file://${filePath}`, range: Range.create(0, 0, 0, 0) };
 }
 
+export type LocationLike = tsm.Node | string | Location;
+
+export function LocationLike_toLocation(x: LocationLike): Location {
+  if (typeof x === "string") {
+    if (x.startsWith("/")) x = "file://" + x;
+    return { uri: x, range: Range.create(0, 0, 0, 0) };
+  }
+  if (typeof x === "object") {
+    if (x instanceof tsm.Node) return Location_fromNode(x);
+    return x;
+  }
+  throw new Error();
+}
+
 /**
- * Helper method to create a DiagnosticWithLocation from a ts-morph Node and an error message
+ * Helper method to create diagnostics
  * @param node
  * @param message
  */
 export function err(
-  node: tsm.Node,
+  loc: LocationLike,
   message: string,
   code?: number | string
 ): ExtendedDiagnostic {
+  const { uri, range } = LocationLike_toLocation(loc);
   return {
-    uri: `file://${node.getSourceFile().getFilePath()}`,
+    uri,
     diagnostic: {
-      range: Range_fromNode(node),
+      range,
       message,
       severity: DiagnosticSeverity.Error,
       code,

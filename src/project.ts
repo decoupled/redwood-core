@@ -45,10 +45,6 @@ export interface RWProjectOptions {
 }
 
 const allFilesGlob = "/**/*.{js,jsx,ts,tsx}";
-const fullDocRange: Range = {
-  start: { line: 0, character: 0 },
-  end: { line: 0, character: 0 },
-};
 
 /**
  * Represents a Redwood project.
@@ -205,17 +201,9 @@ export class RWTOML extends FileNode {
     try {
       this.parsedTOML;
     } catch (e) {
-      yield {
-        uri: this.uri,
-        diagnostic: {
-          range: {
-            start: { line: e.line, character: e.column },
-            end: { line: e.line, character: e.column },
-          },
-          message: "TOML Parser Error: " + e.message,
-          severity: DiagnosticSeverity.Error,
-        },
-      } as ExtendedDiagnostic;
+      const pos = { line: e.line, character: e.column };
+      const range = Range.create(pos, pos);
+      yield err({ uri: this.uri, range }, "TOML Parser Error: " + e.message);
       return;
     }
     // at this point we know that the TOML was parsed successfully
@@ -269,29 +257,19 @@ export class RWCell extends RWComponent {
   *diagnostics() {
     // check that QUERY and Success are exported
     if (!this.exportedSymbols.has("QUERY")) {
-      yield {
-        uri: this.uri,
-        diagnostic: {
-          range: fullDocRange,
-          message:
-            "Every Cell MUST export a QUERY variable (GraphQL query string)",
-          severity: DiagnosticSeverity.Error,
-        },
-      } as ExtendedDiagnostic;
+      yield err(
+        this.uri,
+        "Every Cell MUST export a QUERY variable (GraphQL query string)"
+      );
     }
     // TODO: check that exported QUERY is a TaggedTemplateLiteral
     // TODO: check that exported QUERY is syntactically valid GraphQL
     // TODO: check that exported QUERY is semantically valid GraphQL (fields exist)
     if (!this.exportedSymbols.has("Success")) {
-      yield {
-        uri: this.uri,
-        diagnostic: {
-          range: fullDocRange,
-          message:
-            "Every Cell MUST export a Success variable (React Component)",
-          severity: DiagnosticSeverity.Error,
-        },
-      } as ExtendedDiagnostic;
+      yield err(
+        this.uri,
+        "Every Cell MUST export a Success variable (React Component)"
+      );
     }
   }
 }
@@ -457,16 +435,11 @@ export class RWSDL extends FileNode {
   }
   *diagnostics() {
     if (!this.schemaStringNode) {
-      yield {
-        uri: this.uri,
-        diagnostic: {
-          range: fullDocRange,
-          message:
-            "Each SDL file must export a variable named 'schema' with a GraphQL schema string",
-          severity: DiagnosticSeverity.Error,
-          code: RWError.SCHEMA_NOT_DEFINED,
-        },
-      } as ExtendedDiagnostic;
+      yield err(
+        this.uri,
+        "Each SDL file must export a variable named 'schema' with a GraphQL schema string",
+        RWError.SCHEMA_NOT_DEFINED
+      );
     }
   }
 }
@@ -673,14 +646,7 @@ export class RWRouter extends FileNode {
       // should we assign this error to the project? to redwood.toml?
       const uri = `file://${this.parent.projectRoot}/redwood.toml`;
       const message = `Routes.js does not exist`;
-      yield {
-        uri,
-        diagnostic: {
-          range: fullDocRange, // maybe only to the "web" property in the toml file?
-          message,
-          severity: DiagnosticSeverity.Error,
-        },
-      } as ExtendedDiagnostic;
+      yield err(uri, message);
       // TODO: add quickFix (create a simple Routes.js)
       return; // stop checking for errors if the file doesn't exist
     }
