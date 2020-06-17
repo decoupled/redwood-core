@@ -255,17 +255,20 @@ export class RWComponent extends FileNode {
 export class RWCell extends RWComponent {
   // TODO: diagnostic: a cell must export certain members...
   isCell = true;
-  *diagnostics() {
-    const exportedSymbols = new Set<string>();
+
+  @lazy() private get exportedSymbols() {
+    // KLUDGE!
+    const ss = new Set<string>();
     for (const d of this.sf.getDescendantsOfKind(
       tsm.SyntaxKind.VariableDeclaration
-    )) {
-      if (d.isExported()) {
-        exportedSymbols.add(d.getName());
-      }
-    }
+    ))
+      if (d.isExported()) ss.add(d.getName());
+    return ss;
+  }
+
+  *diagnostics() {
     // check that QUERY and Success are exported
-    if (!exportedSymbols.has("QUERY")) {
+    if (!this.exportedSymbols.has("QUERY")) {
       yield {
         uri: this.uri,
         diagnostic: {
@@ -279,7 +282,7 @@ export class RWCell extends RWComponent {
     // TODO: check that exported QUERY is a TaggedTemplateLiteral
     // TODO: check that exported QUERY is syntactically valid GraphQL
     // TODO: check that exported QUERY is semantically valid GraphQL (fields exist)
-    if (!exportedSymbols.has("Success")) {
+    if (!this.exportedSymbols.has("Success")) {
       yield {
         uri: this.uri,
         diagnostic: {
@@ -298,7 +301,8 @@ export class RWService extends FileNode implements OutlineItem {
     super();
   }
   /**
-   * the name of this service
+   * The name of this service:
+   * services/todos/todos.js --> todos
    */
   @lazy() get name() {
     return basenameNoExt(this.filePath);
@@ -308,6 +312,10 @@ export class RWService extends FileNode implements OutlineItem {
     return this.name;
   }
 
+  /**
+   * Returns the SDL associated with this service (if any).
+   * Match is performed by name.
+   */
   @lazy() get sdl(): RWSDL | undefined {
     return this.parent.sdls.find((sdl) => sdl.name === this.name);
   }
@@ -316,6 +324,10 @@ export class RWService extends FileNode implements OutlineItem {
     return [...this.funcs];
   }
 
+  /**
+   * All the exported functions declared in this service file.
+   * They can be both ArrowFunctions (with name) or FunctionDeclarations (with name)
+   */
   @lazy() get funcs() {
     return [...this._funcs()];
   }
@@ -347,6 +359,7 @@ export class RWServiceFunction extends BaseNode {
   }
 
   @lazy() get id() {
+    // This is a compound ID (because it points to an internal node - one within a file)
     return this.parent.id + " " + this.name;
   }
 
@@ -386,6 +399,10 @@ export class RWServiceFunction extends BaseNode {
           `Parameter mismatch between SDL and implementation ("${p1}" !== "${p2}")`
         );
       }
+      // TODO: check that types match
+      // to do this it is probably easier to leverage a graphql code generator and the typescript compiler
+      // the trick is to create a source file with an interface assignment that will fail if there is a mismatch
+      // we then simpy "bubble up" the type errors from the typescript compiler
     }
   }
 }
@@ -467,6 +484,10 @@ export class RWSDLField extends BaseNode implements OutlineItem {
       this.parent.id + " " + this.objectTypeDef.name.value + "." + this.name
     );
   }
+  /**
+   * The location of this field.
+   * Calculating this is slightly complicated since it is embedded within a TaggedTemplateLiteral
+   */
   @lazy() private get location(): Location {
     let { start, end } = this.field.loc!;
     const node = this.parent.schemaStringNode!;
@@ -480,7 +501,7 @@ export class RWSDLField extends BaseNode implements OutlineItem {
     return this.field.name.value;
   }
   @lazy() get argumentNames() {
-    return (this.field.arguments ?? []).map((a) => a.name.value); //?
+    return (this.field.arguments ?? []).map((a) => a.name.value);
   }
   @lazy() get outlineLabel() {
     return this.name;
@@ -618,10 +639,16 @@ export class RWRouter extends FileNode {
       .find((x) => x.getTagNameNode().getText() === "Router");
   }
 
+  /**
+   * One per <Route>
+   */
   @lazy() get routes() {
     return [...this._routes()];
   }
   private *_routes() {
+    if (!this.jsxNode) return [];
+    // TODO: make sure that they are nexted within the <Router> tag
+    // we are not checking it right now
     for (const x of this.sf.getDescendantsOfKind(
       tsm.SyntaxKind.JsxSelfClosingElement
     )) {
@@ -716,10 +743,6 @@ export class RWRoute extends BaseNode implements OutlineItem {
   @lazy() get outlineAction() {
     // navigate to the JSX Node
     return Location_fromNode(this.jsxNode);
-  }
-
-  @lazy() get outlineIcon() {
-    return this.isAuthenticated ? "route-private" : "route";
   }
 
   /**
