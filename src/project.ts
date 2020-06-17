@@ -307,23 +307,23 @@ export class RWService extends FileNode implements OutlineItem {
    * They can be both ArrowFunctions (with name) or FunctionDeclarations (with name)
    */
   @lazy() get funcs() {
-    return [...this._funcs()];
-  }
-  private *_funcs() {
-    // export const foo = () => {}
-    for (const vd of this.sf.getVariableDeclarations()) {
-      if (vd.isExported()) {
-        const init = vd.getInitializerIfKind(tsm.SyntaxKind.ArrowFunction);
-        if (init) yield new RWServiceFunction(vd.getName(), init, this);
+    const self = this;
+    return iter(function* () {
+      // export const foo = () => {}
+      for (const vd of self.sf.getVariableDeclarations()) {
+        if (vd.isExported()) {
+          const init = vd.getInitializerIfKind(tsm.SyntaxKind.ArrowFunction);
+          if (init) yield new RWServiceFunction(vd.getName(), init, self);
+        }
       }
-    }
-    // export function foo(){}
-    for (const fd of this.sf.getFunctions()) {
-      if (fd.isExported() && !fd.isDefaultExport()) {
-        const nn = fd.getNameNode();
-        if (nn) yield new RWServiceFunction(nn.getText(), fd, this);
+      // export function foo(){}
+      for (const fd of self.sf.getFunctions()) {
+        if (fd.isExported() && !fd.isDefaultExport()) {
+          const nn = fd.getNameNode();
+          if (nn) yield new RWServiceFunction(nn.getText(), fd, self);
+        }
       }
-    }
+    });
   }
 }
 
@@ -350,18 +350,20 @@ export class RWServiceFunction extends BaseNode {
       (f) => f.name === this.name
     );
   }
-  private *_parameterNames() {
-    for (const p of this.node.getParameters()) {
-      const nn = p.getNameNode();
-      if (nn instanceof tsm.ObjectBindingPattern) {
-        for (const element of nn.getElements()) {
-          yield element.getNameNode().getText();
-        }
-      }
-    }
-  }
+
   @lazy() get parameterNames() {
-    return [...this._parameterNames()];
+    const self = this;
+    return iter(function* () {
+      for (const p of self.node.getParameters()) {
+        const nn = p.getNameNode();
+        if (nn instanceof tsm.ObjectBindingPattern) {
+          for (const element of nn.getElements()) {
+            yield element.getNameNode().getText();
+          }
+        }
+        // TODO: handle other cases
+      }
+    });
   }
 
   *diagnostics() {
@@ -431,19 +433,18 @@ export class RWSDL extends FileNode {
     return base.substr(0, base.length - ".sdl.js".length);
   }
   @lazy() get implementableFields() {
-    return [...this._implementableFields()];
+    const self = this;
+    return iter(function* () {
+      if (!self.schemaString) return; //?
+      const ast = parseGraphQL(self.schemaString);
+      for (const def of ast.definitions)
+        if (def.kind === "ObjectTypeDefinition")
+          if (def.name.value === "Query" || def.name.value === "Mutation")
+            for (const field of def.fields ?? [])
+              yield new RWSDLField(def, field, self);
+    });
   }
-  private *_implementableFields() {
-    if (!this.schemaString) return; //?
-    const ast = parseGraphQL(this.schemaString);
-    for (const def of ast.definitions)
-      if (def.kind === "ObjectTypeDefinition")
-        if (def.name.value === "Query" || def.name.value === "Mutation")
-          for (const field of def.fields ?? [])
-            yield new RWSDLField(def, field, this);
-    //JSON.stringify(ast, null, 2) //?
-    //const schema = buildSchema(this.schemaString, { assumeValid: true })
-  }
+
   children() {
     return [...this.implementableFields];
   }
@@ -630,18 +631,18 @@ export class RWRouter extends FileNode {
    * One per <Route>
    */
   @lazy() get routes() {
-    return [...this._routes()];
-  }
-  private *_routes() {
-    if (!this.jsxNode) return [];
-    // TODO: make sure that they are nexted within the <Router> tag
-    // we are not checking it right now
-    for (const x of this.sf.getDescendantsOfKind(
-      tsm.SyntaxKind.JsxSelfClosingElement
-    )) {
-      const tagName = x.getTagNameNode().getText();
-      if (tagName === "Route") yield new RWRoute(x, this);
-    }
+    const self = this;
+    return iter(function* () {
+      if (!self.jsxNode) return [];
+      // TODO: make sure that they are nexted within the <Router> tag
+      // we are not checking it right now
+      for (const x of self.sf.getDescendantsOfKind(
+        tsm.SyntaxKind.JsxSelfClosingElement
+      )) {
+        const tagName = x.getTagNameNode().getText();
+        if (tagName === "Route") yield new RWRoute(x, self);
+      }
+    });
   }
   @lazy() private get numNotFoundPages(): number {
     return this.routes.filter((r) => r.isNotFound).length;
@@ -858,4 +859,8 @@ export class RWRoute extends BaseNode implements OutlineItem {
     }
     return undefined;
   }
+}
+
+function iter<T>(f: () => IterableIterator<T>) {
+  return Array.from(f());
 }
