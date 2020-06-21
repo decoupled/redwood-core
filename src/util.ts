@@ -1,5 +1,6 @@
 import { basename } from "path";
 import { basenameNoExt } from "./ide";
+import { parse } from 'graphql'
 
 export function directoryNameResolver(dirName: string) {
   const parts = dirName.split("/");
@@ -44,4 +45,8 @@ export function validatePath(path: string) {
       memo[param] = true;
     }
   }
+}
+
+export function graphQLSourceToAST(source: string) {
+  return parse(source) //?
 }

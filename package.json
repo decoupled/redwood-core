@@ -21,7 +21,7 @@
     "@types/react": "^16.9.36",
     "deepmerge": "^4.2.2",
     "findup-sync": "^4.0.0",
-    "graphql": "^15.0.0",
+    "graphql": "^15.1.0",
     "ink": "^2.7.1",
     "lazy-get-decorator": "^2.2.0",
     "lodash-decorators": "^6.0.1",
