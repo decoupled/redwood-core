@@ -182,9 +182,7 @@ export class RWProject extends BaseNode implements OutlineItem {
       .map((file) => {
         if (isCellFileName(file)) {
           const possibleCell = new RWCell(file, this)
-          if (possibleCell.isCell) {
-            return possibleCell
-          }
+          return possibleCell.isCell ? possibleCell : new RWComponent(file, this)
         }
         return new RWComponent(file, this)
       })
@@ -288,7 +286,7 @@ export class RWCell extends RWComponent {
       );
     }
 
-    // TODO: This could very likely be added into RWCellExportQUERY
+    // TODO: This could very likely be added into RWCellQUERY
     for (const d of this.sf.getDescendantsOfKind(tsm.SyntaxKind.VariableDeclaration)) {
       if (d.isExported() && d.getName() === 'QUERY') {
         // Check that exported QUERY is syntactically valid GraphQL.
