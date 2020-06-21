@@ -676,8 +676,8 @@ export class RWRouter extends FileNode {
   @lazy() get routes() {
     const self = this;
     return iter(function* () {
-      if (!self.jsxNode) return [];
-      // TODO: make sure that they are nexted within the <Router> tag
+      if (!self.jsxNode) return;
+      // TODO: make sure that they are nested within the <Router> tag
       // we are not checking it right now
       for (const x of self.sf.getDescendantsOfKind(
         tsm.SyntaxKind.JsxSelfClosingElement
