@@ -153,9 +153,8 @@ export class RWProject extends BaseNode implements OutlineItem {
   }
 
   @lazy() get sdls() {
-    // TODO: what is the official logic?
     return this.host
-      .globSync(this.pathHelper.api.graphql + "/**/*.sdl.{js,jsx,ts,tsx}")
+      .globSync(this.pathHelper.api.graphql + "/**/*.sdl.{js,ts}")
       .map((x) => new RWSDL(x, this));
   }
 
@@ -176,13 +175,27 @@ export class RWProject extends BaseNode implements OutlineItem {
   }
 
   @lazy() get components(): RWComponent[] {
-    // TODO: what is the official logic?
     return this.host
       .globSync(this.pathHelper.web.components + allFilesGlob)
-      .filter(followsDirNameConvention)
-      .map((x) =>
-        isCellFileName(x) ? new RWCell(x, this) : new RWComponent(x, this)
-      );
+      .map((file) => {
+        if (isCellFileName(file)) {
+          const possibleCell = new RWCell(file, this)
+          if (possibleCell.isCell) {
+            return possibleCell
+          }
+        }
+        return new RWComponent(file, this)
+      })
+  }
+
+  /**
+   * A "Cell" is a component that ends in `Cell.{js, jsx, tsx}`, but does not
+   * have a default export AND does not export `QUERY`
+   **/
+  @lazy() get cells(): RWCell[] {
+    return this.host.globSync(this.pathHelper.web.components + '/**/*Cell.{js,jsx,tsx}')
+      .map((file) => new RWCell(file, this))
+      .filter(file => file.isCell)
   }
 }
 
@@ -237,14 +250,13 @@ export class RWComponent extends FileNode {
   constructor(public filePath: string, public parent: RWProject) {
     super();
   }
-  isCell = false;
-}
 
-export class RWCell extends RWComponent {
-  // TODO: diagnostic: a cell must export certain members...
-  isCell = true;
+  @lazy() get hasDefaultExport(): boolean {
+    // TODO: Is this enough to test a default export?
+    return this.sf.getDescendantsOfKind(tsm.SyntaxKind.ExportAssignment).length > 0
+  }
 
-  @lazy() private get exportedSymbols() {
+  @lazy() get exportedSymbols() {
     // KLUDGE!
     const ss = new Set<string>();
     for (const d of this.sf.getDescendantsOfKind(
@@ -252,6 +264,17 @@ export class RWCell extends RWComponent {
     ))
       if (d.isExported()) ss.add(d.getName());
     return ss;
+  }
+}
+
+export class RWCell extends RWComponent {
+
+  /**
+   * A file ending in "Cell.[js,jsx,tsx]" could be a cell, it is not a Cell
+   * if it has a default export and does not export QUERY.
+   **/
+  @lazy() get isCell() {
+    return !this.hasDefaultExport && this.exportedSymbols.has("QUERY")
   }
 
   *diagnostics() {
