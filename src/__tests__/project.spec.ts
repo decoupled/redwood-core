@@ -1,7 +1,8 @@
-import { resolve } from "path";
+import { resolve, basename } from "path";
 import { DefaultHost, OutlineItems_toJSON } from "../ide";
 import { RWProject } from "../project";
 import { RWError } from "../errors";
+import { ArrayDestructuringAssignment } from "ts-morph";
 
 describe("redwood project", () => {
   it("example-todo-master", async () => {
@@ -51,4 +52,24 @@ describe("redwood project", () => {
     const dss = await project.router.getAllDiagnostics();
     expect(dss.length).toBeGreaterThan(0);
   });
+
+  describe("Cells", () => {
+
+    const projectRoot = resolve(
+      __dirname,
+      "../../fixtures/example-todo-master-with-errors"
+    );
+
+    it("Correctly determines a Cell component vs a normal component", () => {
+      const projectRoot = resolve(
+        __dirname,
+        "../../fixtures/example-todo-master-with-errors"
+      );
+      const project = new RWProject({ projectRoot, host: new DefaultHost() });
+      expect(project.cells.map(cell => basename(cell.filePath))).not.toContain('TableCell.js')
+    })
+  })
 });
+
+
+
