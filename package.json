@@ -11,7 +11,8 @@
     "test": "jest",
     "change": "beachball change",
     "gen": "plop",
-    "analyze": "ts-node src/analyze.tsx"
+    "analyze": "ts-node src/analyze.tsx",
+    "format": "prettier --write ./src/**/*.{ts,tsx}"
   },
   "dependencies": {
     "@babel/plugin-proposal-decorators": "^7.10.1",
@@ -39,6 +40,7 @@
     "jest": ">=26 <27",
     "just-scripts": "^0.43.2",
     "just-stack-single-lib": "^1.0.11",
+    "prettier": "^2.0.5",
     "ts-jest": "^26.1.0",
     "ts-node": "^8.10.2"
   }
