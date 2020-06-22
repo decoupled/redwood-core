@@ -65,7 +65,7 @@ const OutlineItemUI = (props: { data: OutlineItem; depth: number }) => {
   }
   function renderChildren() {
     return (children.result ?? []).map((r) => (
-      <OutlineItemUI key={r.id ?? r.label} data={r} depth={props.depth + 1} />
+      <OutlineItemUI key={r.key ?? r.label} data={r} depth={props.depth + 1} />
     ));
   }
 };

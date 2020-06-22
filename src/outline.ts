@@ -1,17 +1,17 @@
-import { RWProject } from "./project";
 import { FileNode } from "./ide";
+import { RWProject } from "./project";
 
 export interface OutlineItem {
-  /**
-   * Each node must have a unique ID.
-   * IDs are opaque strings.
-   */
-  id?: string;
   /**
    * Label for the outline item.
    * This is the main text.
    */
   label: string;
+  /**
+   * If label is not unique amongst siblings, key is used to disambiguate.
+   * This is similar to ReactNode.key
+   */
+  key?: string;
   /**
    * Secondary text.
    */
@@ -98,7 +98,7 @@ function fromFiles(fileNodes: FileNode[]): OutlineItem[] {
 
 function fromFile(fileNode: FileNode): OutlineItem {
   return {
-    id: fileNode.id,
+    key: fileNode.id,
     label: fileNode.basenameNoExt,
   };
 }
