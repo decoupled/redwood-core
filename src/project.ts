@@ -29,7 +29,6 @@ import {
   Location_fromFilePath,
   Location_fromNode,
   offset2position,
-  OutlineItem,
   Range_fromNode,
 } from "./ide";
 import {
@@ -52,7 +51,7 @@ const allFilesGlob = "/**/*.{js,jsx,ts,tsx}";
  * Represents a Redwood project.
  * This is the root node.
  */
-export class RWProject extends BaseNode implements OutlineItem {
+export class RWProject extends BaseNode {
   constructor(public opts: RWProjectOptions) {
     super();
   }
@@ -68,29 +67,6 @@ export class RWProject extends BaseNode implements OutlineItem {
 
   get id() {
     return this.projectRoot;
-  }
-
-  outlineLabel = "Redwood.js";
-
-  @lazy() get outlineChildren() {
-    const self = this;
-    return [
-      {
-        id: "pages",
-        outlineLabel: "pages",
-        get outlineChildren() {
-          return self.pages;
-        },
-      },
-      {
-        id: "routes",
-        outlineLabel: "routes",
-        get outlineChildren() {
-          return self.router.routes;
-        },
-      },
-      // add more stuff
-    ];
   }
 
   children() {
@@ -181,11 +157,13 @@ export class RWProject extends BaseNode implements OutlineItem {
       .globSync(this.pathHelper.web.components + allFilesGlob)
       .map((file) => {
         if (isCellFileName(file)) {
-          const possibleCell = new RWCell(file, this)
-          return possibleCell.isCell ? possibleCell : new RWComponent(file, this)
+          const possibleCell = new RWCell(file, this);
+          return possibleCell.isCell
+            ? possibleCell
+            : new RWComponent(file, this);
         }
-        return new RWComponent(file, this)
-      })
+        return new RWComponent(file, this);
+      });
   }
 
   /**
@@ -193,9 +171,10 @@ export class RWProject extends BaseNode implements OutlineItem {
    * have a default export AND does not export `QUERY`
    **/
   @lazy() get cells(): RWCell[] {
-    return this.host.globSync(this.pathHelper.web.components + '/**/*Cell.{js,jsx,tsx}')
+    return this.host
+      .globSync(this.pathHelper.web.components + "/**/*Cell.{js,jsx,tsx}")
       .map((file) => new RWCell(file, this))
-      .filter(file => file.isCell)
+      .filter((file) => file.isCell);
   }
 }
 
@@ -253,7 +232,9 @@ export class RWComponent extends FileNode {
 
   @lazy() get hasDefaultExport(): boolean {
     // TODO: Is this enough to test a default export?
-    return this.sf.getDescendantsOfKind(tsm.SyntaxKind.ExportAssignment).length > 0
+    return (
+      this.sf.getDescendantsOfKind(tsm.SyntaxKind.ExportAssignment).length > 0
+    );
   }
 
   @lazy() get exportedSymbols() {
@@ -268,13 +249,12 @@ export class RWComponent extends FileNode {
 }
 
 export class RWCell extends RWComponent {
-
   /**
    * A "Cell" is a component that ends in `Cell.{js, jsx, tsx}`, but does not
    * have a default export AND does not export `QUERY`
    **/
   @lazy() get isCell() {
-    return !this.hasDefaultExport && this.exportedSymbols.has("QUERY")
+    return !this.hasDefaultExport && this.exportedSymbols.has("QUERY");
   }
 
   *diagnostics() {
@@ -287,13 +267,17 @@ export class RWCell extends RWComponent {
     }
 
     // TODO: This could very likely be added into RWCellQUERY
-    for (const d of this.sf.getDescendantsOfKind(tsm.SyntaxKind.VariableDeclaration)) {
-      if (d.isExported() && d.getName() === 'QUERY') {
+    for (const d of this.sf.getDescendantsOfKind(
+      tsm.SyntaxKind.VariableDeclaration
+    )) {
+      if (d.isExported() && d.getName() === "QUERY") {
         // Check that exported QUERY is syntactically valid GraphQL.
-        const gqlNode = d.getDescendantsOfKind(tsm.SyntaxKind.TaggedTemplateExpression)[0].getChildAtIndex(1)
-        const gqlText = gqlNode.getText().replace(/\`/g, '')
+        const gqlNode = d
+          .getDescendantsOfKind(tsm.SyntaxKind.TaggedTemplateExpression)[0]
+          .getChildAtIndex(1);
+        const gqlText = gqlNode.getText().replace(/\`/g, "");
         try {
-          graphQLSourceToAST(gqlText)
+          graphQLSourceToAST(gqlText);
         } catch (e) {
           // TODO: Make this point to the exact location included in the error.
           yield {
@@ -303,7 +287,7 @@ export class RWCell extends RWComponent {
               message: e.message,
               severity: DiagnosticSeverity.Error,
             },
-          } as ExtendedDiagnostic
+          } as ExtendedDiagnostic;
         }
       }
     }
@@ -317,7 +301,7 @@ export class RWCell extends RWComponent {
   }
 }
 
-export class RWService extends FileNode implements OutlineItem {
+export class RWService extends FileNode {
   constructor(public filePath: string, public parent: RWProject) {
     super();
   }
@@ -327,10 +311,6 @@ export class RWService extends FileNode implements OutlineItem {
    */
   @lazy() get name() {
     return basenameNoExt(this.filePath);
-  }
-
-  @lazy() get outlineLabel() {
-    return this.name;
   }
 
   /**
@@ -502,7 +482,7 @@ export class RWSDL extends FileNode {
   }
 }
 
-export class RWSDLField extends BaseNode implements OutlineItem {
+export class RWSDLField extends BaseNode {
   constructor(
     public objectTypeDef: ObjectTypeDefinitionNode,
     public field: FieldDefinitionNode,
@@ -533,12 +513,6 @@ export class RWSDLField extends BaseNode implements OutlineItem {
   }
   @lazy() get argumentNames() {
     return (this.field.arguments ?? []).map((a) => a.name.value);
-  }
-  @lazy() get outlineLabel() {
-    return this.name;
-  }
-  @lazy() get outlineAction() {
-    return this.location;
   }
   *ideInfo() {
     if (this.impl) {
@@ -591,7 +565,7 @@ export const ${this.field.name.value} = ({${params}}) => {
   }
 }
 
-export class RWPage extends FileNode implements OutlineItem {
+export class RWPage extends FileNode {
   constructor(
     public const_: string,
     public path: string,
@@ -601,15 +575,6 @@ export class RWPage extends FileNode implements OutlineItem {
   }
   @lazy() get filePath() {
     return directoryNameResolver(this.path);
-  }
-  @lazy() get outlineLabel() {
-    return this.basenameNoExt;
-  }
-  @lazy() get outlineDescription() {
-    return basename(this.filePath);
-  }
-  @lazy() get outlineAction() {
-    return this.filePath;
   }
   @lazy() get route() {
     return this.parent.router.routes.find(
@@ -726,7 +691,7 @@ export class RWRouter extends FileNode {
   }
 }
 
-export class RWRoute extends BaseNode implements OutlineItem {
+export class RWRoute extends BaseNode {
   constructor(
     /**
      * the <Route> tag

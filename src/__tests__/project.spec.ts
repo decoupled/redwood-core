@@ -1,8 +1,6 @@
-import { resolve, basename } from "path";
-import { DefaultHost, OutlineItems_toJSON } from "../ide";
+import { basename, resolve } from "path";
+import { DefaultHost } from "../ide";
 import { RWProject } from "../project";
-import { RWError } from "../errors";
-import { ArrayDestructuringAssignment } from "ts-morph";
 
 describe("redwood project", () => {
   it("example-todo-master", async () => {
@@ -30,9 +28,6 @@ describe("redwood project", () => {
     project.functions.length; //?
     project.services.length; //?
     project.sdls.length; //?
-    project.outlineLabel; //?
-    const outline = await OutlineItems_toJSON([project]);
-    JSON.stringify(outline, null, 2); //?
     const ds = await project.getAllDiagnostics();
     ds.length; //?
   });
@@ -54,7 +49,6 @@ describe("redwood project", () => {
   });
 
   describe("Cells", () => {
-
     const projectRoot = resolve(
       __dirname,
       "../../fixtures/example-todo-master-with-errors"
@@ -66,10 +60,9 @@ describe("redwood project", () => {
         "../../fixtures/example-todo-master-with-errors"
       );
       const project = new RWProject({ projectRoot, host: new DefaultHost() });
-      expect(project.cells.map(cell => basename(cell.filePath))).not.toContain('TableCell.js')
-    })
-  })
+      expect(
+        project.cells.map((cell) => basename(cell.filePath))
+      ).not.toContain("TableCell.js");
+    });
+  });
 });
-
-
-

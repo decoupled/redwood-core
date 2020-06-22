@@ -1,7 +1,8 @@
 import { Box, Color, Text } from "ink";
 import React, { useMemo } from "react";
 import { useAsync } from "react-async-hook";
-import { DefaultHost, ExtendedDiagnostic, OutlineItem } from "./ide";
+import { DefaultHost, ExtendedDiagnostic } from "./ide";
+import { getOutline, OutlineItem } from "./outline";
 import { RWProject } from "./project";
 
 export const DiagnosticsUI = (props: { project: RWProject }) => {
@@ -35,10 +36,14 @@ const DiagnosticUI = (props: { diagnostic: ExtendedDiagnostic }) => {
   );
 };
 
-export const OutlineItemUI = (props: { data: OutlineItem; depth: number }) => {
+export const OutlineUI = (props: { project: RWProject }) => {
+  return <OutlineItemUI data={getOutline(props.project)} depth={0} />;
+};
+
+const OutlineItemUI = (props: { data: OutlineItem; depth: number }) => {
   const children = useAsync(async () => {
-    const cc = props.data.outlineChildren ?? [];
-    return Array.isArray(cc) ? cc : await cc;
+    if (props.data.children) return await props.data.children();
+    return [];
   }, []);
   return (
     <Box flexDirection="column">
@@ -47,19 +52,20 @@ export const OutlineItemUI = (props: { data: OutlineItem; depth: number }) => {
     </Box>
   );
   function renderLabel() {
-    const bullets = props.depth === 0 ? "" : " ".repeat(props.depth) + "- ";
+    const bullets = props.depth === 0 ? "" : "  ".repeat(props.depth) + "";
+    const { label, description } = props.data;
     return (
       <Box flexDirection="row">
         <Text>
-          <Color green>{bullets + " " + props.data.outlineLabel}</Color>
+          <Color green>{bullets + label}</Color>
         </Text>
-        <Color hex="555"> - {props.data.outlineDescription}</Color>
+        {description ? <Color hex="555">{" " + description}</Color> : null}
       </Box>
     );
   }
   function renderChildren() {
     return (children.result ?? []).map((r) => (
-      <OutlineItemUI key={r.id} data={r} depth={props.depth + 1} />
+      <OutlineItemUI key={r.id ?? r.label} data={r} depth={props.depth + 1} />
     ));
   }
 };

@@ -84,38 +84,6 @@ export type QuickFixEdits = Map<string, string | undefined>;
 
 export type CLICommand = string;
 
-export interface OutlineItem {
-  /**
-   * Label for the outline item.
-   * This is the main text.
-   */
-  outlineLabel: string;
-  /**
-   * Secondary text.
-   */
-  outlineDescription?: string;
-  /**
-   * Each node must have a unique ID.
-   */
-  id: string;
-  /**
-   *
-   */
-  // outlineIcon?: OutlineIcon;
-  outlineTooltip?: string;
-  /**
-   * What to do when the item is clicked/navigated to
-   * - Passing a FilePath or a Location will result in the IDE navigating
-   * - A CLIAction (string) will call the Redwood CLI
-   */
-  outlineAction?: Action;
-  /**
-   * - If present, this item will be rendered as a folder (with an expand button).
-   * - If undefined, this item will be rendered as a leaf
-   */
-  outlineChildren?: Promise<OutlineItem[]> | OutlineItem[];
-}
-
 export type Action = DocumentUri | Location | CLIAction | (() => {});
 
 // export type OutlineIcon =
@@ -145,27 +113,6 @@ export async function Many_normalize<T>(x: Many<T>): Promise<T[]> {
   if (x === null) return [];
   if (typeof x === "undefined") return [];
   return [...x];
-}
-
-export async function OutlineItems_toJSON(items: OutlineItem[]) {
-  return Promise.all(items.map(OutlineItem_toJSON));
-}
-
-export async function OutlineItem_toJSON(item: OutlineItem) {
-  const data: any = {
-    outlineLabel: item.outlineLabel,
-    outlineDescription: item.outlineDescription,
-    id: item.id,
-    // outlineIcon: item.outlineIcon,
-    outlineTooltip: item.outlineTooltip,
-    outlineAction: item.outlineAction,
-  };
-  const c = item.outlineChildren;
-  if (c) {
-    const v = c instanceof Promise ? await c : c;
-    data.outlineChildren = await OutlineItems_toJSON(v);
-  }
-  return data;
 }
 
 export abstract class BaseNode {

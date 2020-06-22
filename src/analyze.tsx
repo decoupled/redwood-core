@@ -1,13 +1,9 @@
 import { Box, render, Text, Color } from "ink";
 import { resolve } from "path";
 import React from "react";
-import { DiagnosticsUI, OutlineItemUI, useProject } from "./ui";
+import { DiagnosticsUI, OutlineUI, useProject } from "./ui";
 
-const projectRoot = resolve(
-  __dirname,
-  "..",
-  "fixtures/example-todo-master-with-errors"
-);
+const projectRoot = resolve(__dirname, "..", "fixtures/example-todo-master");
 
 const App = (props: { projectRoot: string }) => {
   const project = useProject(projectRoot);
@@ -19,7 +15,7 @@ const App = (props: { projectRoot: string }) => {
       <Text>
         <Color yellow>## Project Outline</Color>
       </Text>
-      <OutlineItemUI data={project} depth={0} />
+      <OutlineUI project={project} />
       <Text>
         <Color yellow>## Project Diagnostics</Color>
       </Text>

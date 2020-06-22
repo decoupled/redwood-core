@@ -1,4 +1,4 @@
-import { DefaultHost, ExtendedDiagnostic, Host, OutlineItem } from "./ide";
+import { DefaultHost, ExtendedDiagnostic, Host } from "./ide";
 import { RWProject } from "./project";
 
 export async function getDiagnostics(
@@ -17,11 +17,3 @@ export async function getDiagnostics(
 }
 
 export async function printDiagnostics() {}
-
-// TODO
-export async function getOutline(
-  projectRoot: string,
-  host: Host = new DefaultHost()
-): Promise<OutlineItem> {
-  return new RWProject({ projectRoot, host });
-}
