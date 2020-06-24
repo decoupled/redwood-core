@@ -53,13 +53,14 @@ const OutlineItemUI = (props: { data: OutlineItem; depth: number }) => {
   );
   function renderLabel() {
     const bullets = props.depth === 0 ? "" : "  ".repeat(props.depth) + "";
-    const { label, description } = props.data;
+    const { label, description, link } = props.data;
     return (
       <Box flexDirection="row">
         <Text>
-          <Color green>{bullets + label}</Color>
+          <Color hex="eee">{bullets + label}</Color>
         </Text>
-        {description ? <Color hex="555">{" " + description}</Color> : null}
+        {description ? <Color hex="aaa">{" " + description}</Color> : null}
+        {link ? <Color hex="555">{" " + link}</Color> : null}
       </Box>
     );
   }

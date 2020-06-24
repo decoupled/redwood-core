@@ -11,7 +11,7 @@
     "test": "jest",
     "change": "beachball change",
     "gen": "plop",
-    "analyze": "ts-node src/analyze.tsx",
+    "analyze": "ts-node --transpile-only src/analyze.tsx",
     "format": "prettier --write ./src/**/*.{ts,tsx}"
   },
   "dependencies": {

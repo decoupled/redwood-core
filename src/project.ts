@@ -734,9 +734,10 @@ export class RWRoute extends BaseNode {
     return basename(fp);
   }
 
-  @lazy() get outlineAction() {
-    // navigate to the JSX Node
-    return Location_fromNode(this.jsxNode);
+  @lazy() get outlineLink() {
+    return `${this.jsxNode
+      .getSourceFile()
+      .getFilePath()}:${this.jsxNode.getStartLineNumber()}:${this.jsxNode.getStartLinePos()}`;
   }
 
   /**
