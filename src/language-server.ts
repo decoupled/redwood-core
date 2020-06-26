@@ -26,7 +26,7 @@ let hasWorkspaceFolderCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
   connection.console.log(
-    `redwood.js language server onInitialize() process.pid = ${process.pid}`
+    `redwood.js language server onInitialize() (PID = ${process.pid})`
   );
   const capabilities = params.capabilities;
 

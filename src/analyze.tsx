@@ -3,7 +3,11 @@ import { resolve } from "path";
 import React from "react";
 import { DiagnosticsUI, OutlineUI, useProject } from "./ui";
 
-const projectRoot = resolve(__dirname, "..", "fixtures/example-todo-master");
+const projectRoot = resolve(
+  __dirname,
+  "..",
+  "fixtures/example-todo-master-with-errors"
+);
 
 const App = (props: { projectRoot: string }) => {
   const project = useProject(projectRoot);

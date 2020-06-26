@@ -1,7 +1,7 @@
 import { Box, Color, Text } from "ink";
 import React, { useMemo } from "react";
 import { useAsync } from "react-async-hook";
-import { DefaultHost, ExtendedDiagnostic } from "./ide";
+import { DefaultHost, ExtendedDiagnostic, LocationLike_toLink } from "./ide";
 import { getOutline, OutlineItem } from "./outline";
 import { RWProject } from "./project";
 
@@ -18,20 +18,11 @@ export const DiagnosticsUI = (props: { project: RWProject }) => {
 };
 
 const DiagnosticUI = (props: { diagnostic: ExtendedDiagnostic }) => {
-  const d = props.diagnostic;
-  const { start } = d.diagnostic.range;
+  const link = LocationLike_toLink(props.diagnostic);
   return (
     <Text>
-      <Color red>{d.diagnostic.message}</Color>
-      <Color hex="777">
-        {" (" +
-          d.uri.substr(7) +
-          ":" +
-          start.line +
-          ":" +
-          start.character +
-          ")"}
-      </Color>
+      <Color red>{props.diagnostic.diagnostic.message}</Color>
+      <Color hex="777">{link}</Color>
     </Text>
   );
 };

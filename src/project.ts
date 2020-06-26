@@ -30,6 +30,8 @@ import {
   Location_fromNode,
   offset2position,
   Range_fromNode,
+  LocationLike_toLocation,
+  LocationLike_toLink,
 } from "./ide";
 import {
   directoryNameResolver,
@@ -708,6 +710,10 @@ export class RWRoute extends BaseNode {
     return this.parent.id + " " + this.jsxNode.getStart();
   }
 
+  @lazy() get location(): Location {
+    return LocationLike_toLocation(this.jsxNode);
+  }
+
   @lazy() get isAuthenticated() {
     return false; // TODO
   }
@@ -734,10 +740,8 @@ export class RWRoute extends BaseNode {
     return basename(fp);
   }
 
-  @lazy() get outlineLink() {
-    return `${this.jsxNode
-      .getSourceFile()
-      .getFilePath()}:${this.jsxNode.getStartLineNumber()}:${this.jsxNode.getStartLinePos()}`;
+  @lazy() get outlineLink(): string {
+    return LocationLike_toLink(this.location);
   }
 
   /**

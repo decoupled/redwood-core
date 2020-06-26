@@ -11,6 +11,7 @@ import {
   Location,
   Position,
   Range,
+  DiagnosticRelatedInformation,
 } from "vscode-languageserver-types";
 
 export type NodeID = string;
@@ -294,7 +295,17 @@ export function Location_fromFilePath(filePath: string): Location {
   return { uri: `file://${filePath}`, range: Range.create(0, 0, 0, 0) };
 }
 
-export type LocationLike = tsm.Node | string | Location;
+export function LocationLike_toLink(loc: LocationLike): string {
+  const {
+    uri,
+    range: {
+      start: { line, character },
+    },
+  } = LocationLike_toLocation(loc);
+  return `${uri}:${line}:${character}`;
+}
+
+export type LocationLike = tsm.Node | string | Location | ExtendedDiagnostic;
 
 export function LocationLike_toLocation(x: LocationLike): Location {
   if (typeof x === "string") {
@@ -303,9 +314,47 @@ export function LocationLike_toLocation(x: LocationLike): Location {
   }
   if (typeof x === "object") {
     if (x instanceof tsm.Node) return Location_fromNode(x);
-    return x;
+    if (isLocation(x)) return x;
+    if (isExtendedDiagnostic(x))
+      return { uri: x.uri, range: x.diagnostic.range };
   }
   throw new Error();
+}
+
+export function isLocation(x: any): x is Location {
+  if (typeof x !== "object") return false;
+  if (typeof x.uri !== "string") return false;
+  if (!isRange(x.range)) return false;
+  return true;
+}
+
+export function isExtendedDiagnostic(x: any): x is ExtendedDiagnostic {
+  if (typeof x !== "object") return false;
+  if (typeof x.uri !== "string") return false;
+  if (!isDiagnostic(x.diagnostic)) return false;
+  return true;
+}
+
+export function isDiagnostic(x: any): x is Diagnostic {
+  // TODO: improve checks
+  if (typeof x !== "object") return false;
+  if (typeof x.message !== "string") return false;
+  if (!isRange(x.range)) return false;
+  return true;
+}
+
+export function isRange(x: any): x is Range {
+  if (typeof x !== "object") return false;
+  if (!isPosition(x.start)) return false;
+  if (!isPosition(x.end)) return false;
+  return true;
+}
+
+export function isPosition(x: any): x is Position {
+  if (typeof x !== "object") return false;
+  if (typeof x.line !== "number") return false;
+  if (typeof x.character !== "number") return false;
+  return true;
 }
 
 /**
@@ -336,8 +385,25 @@ export function offset2position(offset: number, sf: tsm.SourceFile): Position {
 }
 
 export function nudgeDiagnostic(d: Diagnostic, offset: number) {
-  const { range, ...rest } = d;
-  return { ...rest, range: nudgeRange(range, offset) };
+  let { range, relatedInformation, ...rest } = d;
+  range = nudgeRange(range, offset);
+  if (relatedInformation)
+    relatedInformation = relatedInformation.map((x) =>
+      nudgeDiagnosticRelatedInformation(x, offset)
+    );
+  return { ...rest, relatedInformation, range };
+}
+
+function nudgeDiagnosticRelatedInformation(
+  d: DiagnosticRelatedInformation,
+  offset: number
+): DiagnosticRelatedInformation {
+  let {
+    location: { uri, range },
+    message,
+  } = d;
+  range = nudgeRange(range, offset);
+  return { location: { uri, range }, message };
 }
 
 function nudgeRange(r: Range, offset: number): Range {
@@ -347,5 +413,8 @@ function nudgeRange(r: Range, offset: number): Range {
   };
 }
 function nudgePosition(p: Position, offset: number): Position {
-  return { line: p.line + offset, character: p.character + offset };
+  const pp = { line: p.line + offset, character: p.character + offset };
+  if (pp.line < 0) pp.line = 0;
+  if (pp.character < 0) pp.character = 0;
+  return pp;
 }
