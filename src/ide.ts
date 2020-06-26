@@ -330,23 +330,22 @@ export function err(
   };
 }
 
-/**
- * Helper method to create a DiagnosticWithLocation from a ts-morph Node and a warning message
- * @param node
- * @param message
- */
-export function warn(node: tsm.Node, message: string): ExtendedDiagnostic {
-  return {
-    uri: `file://${node.getSourceFile().getFilePath()}`,
-    diagnostic: {
-      range: Range_fromNode(node),
-      message,
-      severity: DiagnosticSeverity.Warning,
-    },
-  };
-}
-
 export function offset2position(offset: number, sf: tsm.SourceFile): Position {
   const { line, column } = sf.getLineAndColumnAtPos(offset);
   return { character: column, line };
+}
+
+export function nudgeDiagnostic(d: Diagnostic, offset: number) {
+  const { range, ...rest } = d;
+  return { ...rest, range: nudgeRange(range, offset) };
+}
+
+function nudgeRange(r: Range, offset: number): Range {
+  return {
+    start: nudgePosition(r.start, offset),
+    end: nudgePosition(r.end, offset),
+  };
+}
+function nudgePosition(p: Position, offset: number): Position {
+  return { line: p.line + offset, character: p.character + offset };
 }

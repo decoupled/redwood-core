@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2019",
+    "lib": ["ES2019"],
     "module": "commonjs",
     "jsx": "react",
     "declaration": true,
@@ -8,6 +9,7 @@
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "sourceMap": true,
     "typeRoots": [
       "node_modules/@types",
       "node_modules/just-stack-single-lib/node_modules/@types"

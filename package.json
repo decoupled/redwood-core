@@ -19,12 +19,14 @@
     "@prisma/sdk": "^2.0.0-beta.8",
     "@redwoodjs/internal": "^0.8.2",
     "@types/fs-extra": "^9.0.1",
+    "@types/lodash": "^4.14.157",
     "@types/react": "^16.9.36",
     "deepmerge": "^4.2.2",
     "findup-sync": "^4.0.0",
     "graphql": "^15.1.0",
     "ink": "^2.7.1",
     "lazy-get-decorator": "^2.2.0",
+    "lodash": "^4.17.15",
     "lodash-decorators": "^6.0.1",
     "react": "^16.13.1",
     "react-async-hook": "^3.6.1",
@@ -36,6 +38,7 @@
     "vscode-languageserver-types": "^3.15.1"
   },
   "devDependencies": {
+    "@types/node": "^12.12.0",
     "beachball": "^1.12.1",
     "jest": ">=26 <27",
     "just-scripts": "^0.43.2",

@@ -1,19 +1,17 @@
+import _ from "lodash";
+import * as lsp from "vscode-languageserver";
 import {
-  CompletionItem,
-  CompletionItemKind,
   createConnection,
-  Diagnostic,
-  DiagnosticSeverity,
   InitializeParams,
   ProposedFeatures,
-  TextDocumentPositionParams,
   TextDocuments,
 } from "vscode-languageserver";
-import * as lsp from "vscode-languageserver";
-
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { DefaultHost, Host, nudgeDiagnostic } from "./ide";
+import { RWProject } from "./project";
+import { getOutline, outlineToJSON } from "./outline";
 
-const LanguageTsIds = [
+const languageTsIDs = [
   "javascript",
   "javascriptreact",
   "typescript",
@@ -25,14 +23,14 @@ const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
 
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
+  connection.console.log(
+    `redwood.js language server onInitialize() process.pid = ${process.pid}`
+  );
   const capabilities = params.capabilities;
 
   hasWorkspaceFolderCapability = !!capabilities?.workspace?.workspaceFolders;
-  hasDiagnosticRelatedInformationCapability = !!capabilities?.textDocument
-    ?.publishDiagnostics?.relatedInformation;
 
   return {
     capabilities: {
@@ -40,9 +38,9 @@ connection.onInitialize((params: InitializeParams) => {
         openClose: true,
         change: lsp.TextDocumentSyncKind.Full,
       },
-      codeActionProvider: {
-        codeActionKinds: [lsp.CodeActionKind.QuickFix],
-      },
+      // codeActionProvider: {
+      //   codeActionKinds: [lsp.CodeActionKind.QuickFix],
+      // },
       // completionProvider: {
       //   resolveProvider: true,
       // },
@@ -50,7 +48,30 @@ connection.onInitialize((params: InitializeParams) => {
   };
 });
 
-connection.onInitialized(() => {
+let projectRoot: string | undefined;
+function getProject() {
+  if (!projectRoot) return undefined;
+  const host = new HostWithDocumentsStore(documents);
+  const project = new RWProject({ projectRoot, host });
+  return project;
+}
+
+connection.onInitialized(async () => {
+  // custom method for decoupled studio
+  connection.onRequest("getOutline", async () => {
+    const project = getProject();
+    if (!project) return;
+    return await outlineToJSON(getOutline(project));
+  });
+  connection.console.log("onInitialized");
+  setInterval(updateDiagnostics, 3000);
+  const folders = await connection.workspace.getWorkspaceFolders();
+  if (folders) {
+    for (const folder of folders) {
+      projectRoot = folder.uri.substr(7); // remove file://
+    }
+  }
+
   if (hasWorkspaceFolderCapability) {
     connection.workspace.onDidChangeWorkspaceFolders((_event) => {
       connection.console.log("Workspace folder change event received.");
@@ -61,10 +82,31 @@ connection.onInitialized(() => {
 documents.onDidClose((e: any) => {});
 documents.onDidOpen((e: any) => {});
 
+let previousDiagnosticURIs: string[] = [];
+async function updateDiagnostics() {
+  const project = getProject();
+  if (project) {
+    const ds = await project.getAllDiagnostics();
+    //connection.console.log("updateDiagnostics length=" + ds.length);
+    const grouped = _.groupBy(ds, (d) => d.uri);
+    const dss = _.mapValues(grouped, (xds) => xds.map((xd) => xd.diagnostic));
+    const newURIs = Object.keys(dss);
+    const allURIs = newURIs.concat(previousDiagnosticURIs);
+    previousDiagnosticURIs = newURIs;
+    for (const uri of allURIs) {
+      let diagnostics = dss[uri] ?? [];
+      // for some reason we need to nudge before sending over?
+      diagnostics = diagnostics.map((d) => nudgeDiagnostic(d, -1));
+      connection.sendDiagnostics({ uri, diagnostics });
+    }
+  }
+}
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change: { document: TextDocument }) => {
-  validateTextDocument(change.document);
+  //validateTextDocument(change.document);
+  const docs = documents;
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
@@ -73,62 +115,29 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 connection.onDidChangeWatchedFiles((_change) => {});
 
-// This handler provides the initial list of the completion items.
-connection.onCompletion(
-  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    return [
-      {
-        label: "TypeScript",
-        kind: CompletionItemKind.Text,
-        data: 1,
-      },
-      {
-        label: "JavaScript",
-        kind: CompletionItemKind.Text,
-        data: 2,
-      },
-    ];
-  }
-);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-  (item: CompletionItem): CompletionItem => {
-    if (item.data === 1) {
-      item.detail = "TypeScript details";
-      item.documentation = "TypeScript documentation";
-    } else if (item.data === 2) {
-      item.detail = "JavaScript details";
-      item.documentation = "JavaScript documentation";
-    }
-    return item;
-  }
-);
-
-/*
-  connection.onDidOpenTextDocument((params) => {
-      // A text document got opened in VS Code.
-      // params.uri uniquely identifies the document. For documents store on disk this is a file URI.
-      // params.text the initial full content of the document.
-      connection.console.log(`${params.textDocument.uri} opened.`);
-  });
-  connection.onDidChangeTextDocument((params) => {
-      // The content of a text document did change in VS Code.
-      // params.uri uniquely identifies the document.
-      // params.contentChanges describe the content changes to the document.
-      connection.console.log(`${params.textDocument.uri} changed: ${JSON.stringify(params.contentChanges)}`);
-  });
-  connection.onDidCloseTextDocument((params) => {
-      // A text document got closed in VS Code.
-      // params.uri uniquely identifies the document.
-      connection.console.log(`${params.textDocument.uri} closed.`);
-  });
-  */
-
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
+
+class HostWithDocumentsStore implements Host {
+  defaultHost = new DefaultHost();
+  constructor(public documents: TextDocuments<TextDocument>) {}
+  readFileSync(path: string) {
+    const uri = `file://${path}`;
+    const doc = this.documents.get(uri);
+    if (doc) return doc.getText();
+    return this.defaultHost.readFileSync(path);
+  }
+  existsSync(path: string) {
+    return this.defaultHost.existsSync(path);
+  }
+  readdirSync(path: string) {
+    return this.defaultHost.readdirSync(path);
+  }
+  globSync(pattern: string) {
+    return this.defaultHost.globSync(pattern);
+  }
+}

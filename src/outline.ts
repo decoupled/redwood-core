@@ -199,3 +199,9 @@ export async function findOutlineItemForFile(
     if (ff) return ff;
   }
 }
+
+export async function outlineToJSON(item: OutlineItem) {
+  const cs = item.children ? await item.children() : [];
+  const css = await Promise.all(cs.map(outlineToJSON));
+  return { ...item, children: css };
+}
