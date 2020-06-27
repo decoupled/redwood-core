@@ -18,7 +18,7 @@ import {
 } from "vscode-languageserver-types";
 import { RWError } from "./errors";
 import { BaseNode, Definition, FileNode, Host, Implementation } from "./ide";
-import { graphQLSourceToAST, validatePath } from "./util";
+import { graphQLSourceToAST, validateRoutePath } from "./util";
 import {
   basenameNoExt,
   directoryNameResolver,
@@ -781,7 +781,7 @@ export class RWRoute extends BaseNode {
     // TODO: path validation is not strong enough
     if (typeof this.path === "undefined") return undefined;
     try {
-      validatePath(this.path);
+      validateRoutePath(this.path);
       return undefined;
     } catch (e) {
       return e.toString();

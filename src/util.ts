@@ -1,6 +1,6 @@
 import { parse } from "graphql";
 
-export function validatePath(path: string) {
+export function validateRoutePath(path: string) {
   // copied from https://github.com/redwoodjs/redwood/blob/master/packages/router/src/util.js
   // Check that path begins with a slash.
   if (!path.startsWith("/")) {
