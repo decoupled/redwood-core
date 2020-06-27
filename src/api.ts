@@ -7,10 +7,10 @@ export async function getDiagnostics(
   host: Host = new DefaultHost()
 ): Promise<ExtendedDiagnostic[]> {
   const project = new RWProject({ projectRoot, host });
-  if (!filePath) return await project.getAllDiagnostics();
+  if (!filePath) return await project.collectDiagnostics();
   const node = await project.findNode(filePath);
   if (node)
-    return (await node.getAllDiagnostics()).filter(
+    return (await node.collectDiagnostics()).filter(
       (d) => d.uri === `file://${filePath}`
     );
   return [];

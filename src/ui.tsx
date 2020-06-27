@@ -6,7 +6,7 @@ import { getOutline, OutlineItem } from "./outline";
 import { RWProject } from "./project";
 
 export const DiagnosticsUI = (props: { project: RWProject }) => {
-  const diagnostics = useAsync(() => props.project.getAllDiagnostics(), []);
+  const diagnostics = useAsync(() => props.project.collectDiagnostics(), []);
   if (!diagnostics.result) return null;
   return (
     <Box flexDirection="column">

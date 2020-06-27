@@ -28,7 +28,7 @@ describe("redwood project", () => {
     project.functions.length; //?
     project.services.length; //?
     project.sdls.length; //?
-    const ds = await project.getAllDiagnostics();
+    const ds = await project.collectDiagnostics();
     ds.length; //?
   });
 
@@ -38,13 +38,13 @@ describe("redwood project", () => {
       "../../fixtures/example-todo-master-with-errors"
     );
     const project = new RWProject({ projectRoot, host: new DefaultHost() });
-    const ds = await project.getAllDiagnostics();
+    const ds = await project.collectDiagnostics();
     ds.length; //?
     // const diagnosticCodes = new Set(ds.map((d) => d.diagnostic.code));
     // expect(diagnosticCodes).toEqual(
     //   new Set([RWError.NOTFOUND_PAGE_NOT_DEFINED])
     // );
-    const dss = await project.router.getAllDiagnostics();
+    const dss = await project.router.collectDiagnostics();
     expect(dss.length).toBeGreaterThan(0);
   });
 

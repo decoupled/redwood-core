@@ -4,15 +4,18 @@ import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Memoize as memo } from "lodash-decorators";
 import { basename } from "path";
 import * as tsm from "ts-morph";
+import { TextDocuments } from "vscode-languageserver";
+import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   Diagnostic,
+  DiagnosticRelatedInformation,
   DiagnosticSeverity,
   DocumentUri,
   Location,
   Position,
   Range,
-  DiagnosticRelatedInformation,
 } from "vscode-languageserver-types";
+import { OutlineItem } from "./outline";
 
 export type NodeID = string;
 
@@ -159,6 +162,10 @@ export abstract class BaseNode {
     return Many_normalize(this.diagnostics());
   }
 
+  /**
+   * IDE info for this node.
+   * Override this.
+   */
   ideInfo(): Many<IDEInfo> {
     return [];
   }
@@ -168,12 +175,12 @@ export abstract class BaseNode {
    * This is what you'll use to gather all the project diagnostics.
    */
   @memo()
-  async getAllDiagnostics(): Promise<ExtendedDiagnostic[]> {
+  async collectDiagnostics(): Promise<ExtendedDiagnostic[]> {
     // TODO: catch runtime errors and add them as diagnostics
     // TODO: we can parallelize this further
     const d1 = await this._diagnostics();
     const dd = await Promise.all(
-      (await this._children()).map((c) => c.getAllDiagnostics())
+      (await this._children()).map((c) => c.collectDiagnostics())
     );
     const d2 = dd.flat();
     return [...d1, ...d2];
@@ -417,4 +424,29 @@ function nudgePosition(p: Position, offset: number): Position {
   if (pp.line < 0) pp.line = 0;
   if (pp.character < 0) pp.character = 0;
   return pp;
+}
+
+export class HostWithDocumentsStore implements Host {
+  defaultHost = new DefaultHost();
+  constructor(public documents: TextDocuments<TextDocument>) {}
+  readFileSync(path: string) {
+    const uri = `file://${path}`;
+    const doc = this.documents.get(uri);
+    if (doc) return doc.getText();
+    return this.defaultHost.readFileSync(path);
+  }
+  existsSync(path: string) {
+    return this.defaultHost.existsSync(path);
+  }
+  readdirSync(path: string) {
+    return this.defaultHost.readdirSync(path);
+  }
+  globSync(pattern: string) {
+    return this.defaultHost.globSync(pattern);
+  }
+}
+
+export interface DecoupledStudioSpecificLSPMethods {
+  getOutline(): Promise<OutlineItem>;
+  getSampleRouteForPage(pageFilePath: string): Promise<string | undefined>;
 }
