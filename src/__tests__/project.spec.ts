@@ -1,5 +1,5 @@
 import { basename, resolve } from "path";
-import { DefaultHost } from "../ide";
+import { DefaultHost, Many_normalize } from "../ide";
 import { RWProject } from "../project";
 
 describe("redwood project", () => {
@@ -30,6 +30,13 @@ describe("redwood project", () => {
     project.sdls.length; //?
     const ds = await project.collectDiagnostics();
     ds.length; //?
+    const node = await project.findNode(
+      `file:///Users/aldo/com.github/decoupled/redwood-core/fixtures/example-todo-master/api/src/graphql/todos.sdl.js`
+    );
+    if (node) {
+      const info = await node.collectIDEInfo();
+      info; //?
+    }
   });
 
   it("example-todo-master-with-errors", async () => {

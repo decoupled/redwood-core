@@ -7,9 +7,10 @@ import {
   TextDocumentSyncKind,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { HostWithDocumentsStore, nudgeDiagnostic } from "./ide";
+import { HostWithDocumentsStore } from "./ide";
 import { getOutline, outlineToJSON } from "./outline";
 import { RWProject } from "./project";
+import { Range_contains } from "./x/vscode-languageserver-types";
 
 const languageTsIDs = [
   "javascript",
@@ -46,6 +47,8 @@ connection.onInitialize((params: InitializeParams) => {
       // completionProvider: {
       //   resolveProvider: true,
       // },
+      implementationProvider: true,
+      definitionProvider: true,
     },
   };
 });
@@ -97,8 +100,6 @@ async function updateDiagnostics() {
     previousDiagnosticURIs = newURIs;
     for (const uri of allURIs) {
       let diagnostics = dss[uri] ?? [];
-      // for some reason we need to nudge before sending over?
-      diagnostics = diagnostics.map((d) => nudgeDiagnostic(d, -1));
       connection.sendDiagnostics({ uri, diagnostics });
     }
   }
@@ -116,6 +117,32 @@ documents.onDidChangeContent((change: { document: TextDocument }) => {
 connection.onDidChangeWatchedFiles((_change) => {
   // TODO: update diagnostics
   updateDiagnosticsDebounced();
+});
+
+connection.onImplementation(async (params) => {
+  const node = await getProject()?.findNode(params.textDocument.uri);
+  if (!node) return undefined;
+  const info = await node.collectIDEInfo();
+  for (const i of info) {
+    if (i.kind === "Implementation") {
+      if (Range_contains(i.location.range, params.position)) {
+        return i.target;
+      }
+    }
+  }
+});
+
+connection.onDefinition(async (params) => {
+  const node = await getProject()?.findNode(params.textDocument.uri);
+  if (!node) return undefined;
+  const info = await node.collectIDEInfo();
+  for (const i of info) {
+    if (i.kind === "Definition") {
+      if (Range_contains(i.location.range, params.position)) {
+        return i.target;
+      }
+    }
+  }
 });
 
 // Make the text document manager listen on the connection

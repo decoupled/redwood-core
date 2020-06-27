@@ -17,30 +17,25 @@ import {
   Range,
 } from "vscode-languageserver-types";
 import { RWError } from "./errors";
+import { BaseNode, Definition, FileNode, Host, Implementation } from "./ide";
+import { graphQLSourceToAST, validatePath } from "./util";
 import {
   basenameNoExt,
-  BaseNode,
-  Definition,
-  err,
-  ExtendedDiagnostic,
-  FileNode,
-  Host,
-  Implementation,
-  Location_fromFilePath,
-  Location_fromNode,
-  offset2position,
-  Range_fromNode,
-  LocationLike_toLocation,
-  LocationLike_toLink,
-} from "./ide";
-import {
   directoryNameResolver,
   followsDirNameConvention,
   isCellFileName,
   isLayoutFileName,
-  validatePath,
-  graphQLSourceToAST,
-} from "./util";
+} from "./x/path";
+import {
+  err,
+  ExtendedDiagnostic,
+  LocationLike_toLink,
+  LocationLike_toLocation,
+  Location_fromFilePath,
+  Location_fromNode,
+  Position_fromTSMorphOffset,
+  Range_fromNode,
+} from "./x/vscode-languageserver-types";
 
 export interface RWProjectOptions {
   projectRoot: string;
@@ -68,7 +63,7 @@ export class RWProject extends BaseNode {
   }
 
   get id() {
-    return this.projectRoot;
+    return "file://" + this.projectRoot;
   }
 
   children() {
@@ -237,6 +232,12 @@ export class RWComponent extends FileNode {
     return (
       this.sf.getDescendantsOfKind(tsm.SyntaxKind.ExportAssignment).length > 0
     );
+  }
+
+  @lazy() get stories() {
+    // TODO: this is a placeholder
+    // we could list all the (storybook) stories related to this component here
+    return [];
   }
 
   @lazy() get exportedSymbols() {
@@ -506,8 +507,8 @@ export class RWSDLField extends BaseNode {
     const node = this.parent.schemaStringNode!;
     start += node.getPos() + 1; // we add one to account for the quote (`)
     end += node.getPos() + 1;
-    const startPos = offset2position(start, node.getSourceFile());
-    const endPos = offset2position(end, node.getSourceFile());
+    const startPos = Position_fromTSMorphOffset(start, node.getSourceFile());
+    const endPos = Position_fromTSMorphOffset(end, node.getSourceFile());
     return { uri: this.parent.uri, range: { start: startPos, end: endPos } };
   }
   @lazy() get name() {

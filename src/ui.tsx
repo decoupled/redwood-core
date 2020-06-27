@@ -1,9 +1,13 @@
 import { Box, Color, Text } from "ink";
 import React, { useMemo } from "react";
 import { useAsync } from "react-async-hook";
-import { DefaultHost, ExtendedDiagnostic, LocationLike_toLink } from "./ide";
+import { DefaultHost } from "./ide";
 import { getOutline, OutlineItem } from "./outline";
 import { RWProject } from "./project";
+import {
+  ExtendedDiagnostic,
+  LocationLike_toLink,
+} from "./x/vscode-languageserver-types";
 
 export const DiagnosticsUI = (props: { project: RWProject }) => {
   const diagnostics = useAsync(() => props.project.collectDiagnostics(), []);

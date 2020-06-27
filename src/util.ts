@@ -1,26 +1,4 @@
-import { basename } from "path";
-import { basenameNoExt } from "./ide";
-import { parse } from 'graphql'
-
-export function directoryNameResolver(dirName: string) {
-  const parts = dirName.split("/");
-  const pp = parts[parts.length - 1];
-  parts.push(pp);
-  return parts.join("/") + ".js";
-}
-
-export function followsDirNameConvention(filePath: string) {
-  const ending = basenameNoExt(filePath) + "/" + basename(filePath);
-  return filePath.endsWith(ending);
-}
-
-export function isLayoutFileName(f: string) {
-  return basenameNoExt(f).endsWith("Layout");
-}
-
-export function isCellFileName(f: string) {
-  return basenameNoExt(f).endsWith("Cell");
-}
+import { parse } from "graphql";
 
 export function validatePath(path: string) {
   // copied from https://github.com/redwoodjs/redwood/blob/master/packages/router/src/util.js
@@ -48,5 +26,5 @@ export function validatePath(path: string) {
 }
 
 export function graphQLSourceToAST(source: string) {
-  return parse(source) //?
+  return parse(source); //?
 }

@@ -2,20 +2,14 @@ import * as fs from "fs-extra";
 import glob from "glob";
 import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Memoize as memo } from "lodash-decorators";
-import { basename } from "path";
 import * as tsm from "ts-morph";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import {
-  Diagnostic,
-  DiagnosticRelatedInformation,
-  DiagnosticSeverity,
-  DocumentUri,
-  Location,
-  Position,
-  Range,
-} from "vscode-languageserver-types";
+import { DocumentUri, Location } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
+import { basenameNoExt } from "./x/path";
+import { createTSMSourceFile } from "./x/ts-morph";
+import { ExtendedDiagnostic } from "./x/vscode-languageserver-types";
 
 export type NodeID = string;
 
@@ -61,20 +55,6 @@ export interface Hover {
   kind: "Hover";
   location: Location;
   text: string;
-}
-
-/**
- * The Diagnostic interface defined in vscode-languageserver-types
- * does not include the document URI.
- * This interface adds that, and a few other things.
- */
-export interface ExtendedDiagnostic {
-  uri: DocumentUri;
-  diagnostic: Diagnostic;
-  /**
-   * A function that returns a quickfix associated to this diagnostic.
-   */
-  quickFix?: () => Promise<QuickFix>;
 }
 
 export type QuickFix = QuickFixEdits | CLICommand;
@@ -169,6 +149,21 @@ export abstract class BaseNode {
   ideInfo(): Many<IDEInfo> {
     return [];
   }
+  @memo() private _ideInfo() {
+    return Many_normalize(this.ideInfo());
+  }
+
+  @memo()
+  async collectIDEInfo(): Promise<IDEInfo[]> {
+    // TODO: catch runtime errors and add them as diagnostics
+    // TODO: we can parallelize this further
+    const d1 = await this._ideInfo();
+    const dd = await Promise.all(
+      (await this._children()).map((c) => c.collectIDEInfo())
+    );
+    const d2 = dd.flat();
+    return [...d1, ...d2];
+  }
 
   /**
    * Collects diagnostics for this node and all descendants.
@@ -212,10 +207,10 @@ export abstract class FileNode extends BaseNode {
     return `file://${this.filePath}`;
   }
   /**
-   * the ID of a FileNode is its path.
+   * the ID of a FileNode is its file:// uri.
    */
   @lazy() get id() {
-    return this.filePath;
+    return this.uri;
   }
   @lazy() get text() {
     return this.host.readFileSync(this.filePath);
@@ -236,40 +231,6 @@ export abstract class FileNode extends BaseNode {
   }
 }
 
-export function createTSMSourceFile(
-  filePath: string,
-  src: string
-): tsm.SourceFile;
-export function createTSMSourceFile(src: string): tsm.SourceFile;
-/**
- * Creates a cheap in-memory ts-morph source file
- * @param a1
- * @param a2
- */
-export function createTSMSourceFile(a1: string, a2?: string): tsm.SourceFile {
-  let [filePath, src] = [a1, a2];
-  if (!a2) {
-    src = filePath;
-    filePath = "/file.tsx";
-  }
-  return new tsm.Project({
-    useInMemoryFileSystem: true,
-    skipLoadingLibFiles: true,
-    compilerOptions: {
-      skipLibCheck: true,
-      noLib: true,
-      skipDefaultLibCheck: true,
-      noResolve: true,
-    },
-  }).createSourceFile(filePath, src);
-}
-
-export function basenameNoExt(path: string) {
-  const parts = basename(path).split(".");
-  if (parts.length > 1) parts.pop();
-  return parts.join(".");
-}
-
 export class DefaultHost implements Host {
   existsSync(path: string) {
     return fs.existsSync(path);
@@ -283,147 +244,6 @@ export class DefaultHost implements Host {
   globSync(pattern: string) {
     return glob.sync(pattern);
   }
-}
-
-export function Range_fromNode(node: tsm.Node): Range {
-  const start = offset2position(node.getStart(false), node.getSourceFile());
-  const end = offset2position(node.getEnd(), node.getSourceFile());
-  return { start, end };
-}
-
-export function Location_fromNode(node: tsm.Node): Location {
-  return {
-    uri: "file://" + node.getSourceFile().getFilePath(),
-    range: Range_fromNode(node),
-  };
-}
-
-export function Location_fromFilePath(filePath: string): Location {
-  return { uri: `file://${filePath}`, range: Range.create(0, 0, 0, 0) };
-}
-
-export function LocationLike_toLink(loc: LocationLike): string {
-  const {
-    uri,
-    range: {
-      start: { line, character },
-    },
-  } = LocationLike_toLocation(loc);
-  return `${uri}:${line}:${character}`;
-}
-
-export type LocationLike = tsm.Node | string | Location | ExtendedDiagnostic;
-
-export function LocationLike_toLocation(x: LocationLike): Location {
-  if (typeof x === "string") {
-    if (x.startsWith("/")) x = "file://" + x;
-    return { uri: x, range: Range.create(0, 0, 0, 0) };
-  }
-  if (typeof x === "object") {
-    if (x instanceof tsm.Node) return Location_fromNode(x);
-    if (isLocation(x)) return x;
-    if (isExtendedDiagnostic(x))
-      return { uri: x.uri, range: x.diagnostic.range };
-  }
-  throw new Error();
-}
-
-export function isLocation(x: any): x is Location {
-  if (typeof x !== "object") return false;
-  if (typeof x.uri !== "string") return false;
-  if (!isRange(x.range)) return false;
-  return true;
-}
-
-export function isExtendedDiagnostic(x: any): x is ExtendedDiagnostic {
-  if (typeof x !== "object") return false;
-  if (typeof x.uri !== "string") return false;
-  if (!isDiagnostic(x.diagnostic)) return false;
-  return true;
-}
-
-export function isDiagnostic(x: any): x is Diagnostic {
-  // TODO: improve checks
-  if (typeof x !== "object") return false;
-  if (typeof x.message !== "string") return false;
-  if (!isRange(x.range)) return false;
-  return true;
-}
-
-export function isRange(x: any): x is Range {
-  if (typeof x !== "object") return false;
-  if (!isPosition(x.start)) return false;
-  if (!isPosition(x.end)) return false;
-  return true;
-}
-
-export function isPosition(x: any): x is Position {
-  if (typeof x !== "object") return false;
-  if (typeof x.line !== "number") return false;
-  if (typeof x.character !== "number") return false;
-  return true;
-}
-
-/**
- * Helper method to create diagnostics
- * @param node
- * @param message
- */
-export function err(
-  loc: LocationLike,
-  message: string,
-  code?: number | string
-): ExtendedDiagnostic {
-  const { uri, range } = LocationLike_toLocation(loc);
-  return {
-    uri,
-    diagnostic: {
-      range,
-      message,
-      severity: DiagnosticSeverity.Error,
-      code,
-    },
-  };
-}
-
-export function offset2position(offset: number, sf: tsm.SourceFile): Position {
-  const { line, column } = sf.getLineAndColumnAtPos(offset);
-  return { character: column, line };
-}
-
-export function nudgeDiagnostic(d: Diagnostic, offset: number) {
-  let { range, relatedInformation, ...rest } = d;
-  range = nudgeRange(range, offset);
-  if (relatedInformation)
-    relatedInformation = relatedInformation.map((x) =>
-      nudgeDiagnosticRelatedInformation(x, offset)
-    );
-  return { ...rest, relatedInformation, range };
-}
-
-function nudgeDiagnosticRelatedInformation(
-  d: DiagnosticRelatedInformation,
-  offset: number
-): DiagnosticRelatedInformation {
-  let {
-    location: { uri, range },
-    message,
-  } = d;
-  range = nudgeRange(range, offset);
-  return { location: { uri, range }, message };
-}
-
-function nudgeRange(r: Range, offset: number): Range {
-  return {
-    start: nudgePosition(r.start, offset),
-    end: nudgePosition(r.end, offset),
-  };
-}
-function nudgePosition(p: Position, offset: number): Position {
-  const pp = { line: p.line + offset, character: p.character + offset };
-  if (pp.line < 0) pp.line = 0;
-  if (pp.character < 0) pp.character = 0;
-  return pp;
 }
 
 export class HostWithDocumentsStore implements Host {
