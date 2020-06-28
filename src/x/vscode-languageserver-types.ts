@@ -1,5 +1,6 @@
 import * as tsm from "ts-morph";
 import {
+  CodeAction,
   Diagnostic,
   DiagnosticSeverity,
   DocumentUri,
@@ -106,7 +107,7 @@ export interface ExtendedDiagnostic {
   /**
    * A function that returns a quickfix associated to this diagnostic.
    */
-  quickFix?: () => Promise<any>;
+  quickFix?: () => Promise<CodeAction | undefined>;
 }
 
 /**
@@ -129,4 +130,18 @@ export function err(
       code,
     },
   };
+}
+
+export function Diagnostic_compare(d1: Diagnostic, d2: Diagnostic): boolean {
+  if (d1.code !== d2.code) return false;
+  if (d1.message !== d2.message) return false;
+  if (!Range_equals(d1.range, d2.range)) return false;
+  return true;
+}
+
+export function Range_equals(r1: Range, r2: Range): boolean {
+  return toArr(r1).join(",") === toArr(r2).join(",");
+  function toArr(r: Range) {
+    return [r.start.line, r.start.character, r.end.line, r.end.character];
+  }
 }

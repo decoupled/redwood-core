@@ -12,9 +12,12 @@ import { basename, dirname, join } from "path";
 import { parse as parseTOML } from "toml";
 import * as tsm from "ts-morph";
 import {
+  CodeAction,
   DiagnosticSeverity,
   Location,
+  Position,
   Range,
+  WorkspaceChange,
 } from "vscode-languageserver-types";
 import { RWError } from "./errors";
 import { BaseNode, Definition, FileNode, Host, Implementation } from "./ide";
@@ -113,9 +116,21 @@ export class RWProject extends BaseNode {
     return new RWRouter(this.pathHelper.web.routes, this);
   }
 
+  // TODO: move to path helper
   servicesFilePath(name: string) {
     // name = blog,posts
-    return join(this.pathHelper.api.services, name, name + ".js");
+    const ext = this.isTypeScriptProject ? ".ts" : ".js";
+    return join(this.pathHelper.api.services, name, name + ext);
+  }
+
+  // TODO: move to path helper
+  @lazy() get defaultNotFoundPageFilePath() {
+    const ext = this.isTypeScriptProject ? ".tsx" : ".js";
+    return join(
+      this.pathHelper.web.pages,
+      "NotFoundPage",
+      "NotFoundPage" + ext
+    );
   }
 
   @lazy() get services() {
@@ -543,12 +558,29 @@ export const ${this.field.name.value} = ({${params}}) => {
 }`;
   }
 
-  @lazy() get quickFixAddDefaultImplEdits() {
-    const src = this.parent.service?.sf.getText() || ""; // using ?? breaks wallaby.js
-    return new Map([
-      // KLUDGE: we are adding the implementation at the end of the file. we can do better.
-      [this.parent.serviceFilePath, src + "\n\n" + this.defaultImplSnippet],
-    ]);
+  @lazy() get quickFix_addImplementation(): CodeAction {
+    const { service } = this.parent;
+    const change = new WorkspaceChange({ documentChanges: [] });
+    let insertPosition = Position.create(0, 0);
+    let uri = "file://" + this.parent.serviceFilePath;
+    if (service) {
+      // we'll insert into the end of an existing file
+      const lastLine = service.sf.getEndLineNumber();
+      insertPosition = Position.create(lastLine, 0);
+      uri = service.uri;
+    } else {
+      // file doesn't exist
+      // create the service file before inserting
+      change.createFile(uri);
+    }
+    // insert
+    change
+      .getTextEditChange({ uri, version: null })
+      .insert(insertPosition, this.defaultImplSnippet);
+    return {
+      title: "Add implementation",
+      edit: change.edit,
+    } as CodeAction;
   }
 
   *diagnostics() {
@@ -562,7 +594,7 @@ export const ${this.field.name.value} = ({${params}}) => {
           severity: DiagnosticSeverity.Error,
           code: RWError.SERVICE_NOT_IMPLEMENTED,
         },
-        quickFix: async () => this.quickFixAddDefaultImplEdits,
+        quickFix: async () => this.quickFix_addImplementation,
       } as ExtendedDiagnostic;
     }
   }
@@ -667,6 +699,43 @@ export class RWRouter extends FileNode {
     //   }
     // }
   }
+
+  @lazy() get quickFix_addNotFoundpage() {
+    if (!this.jsxNode) return;
+    const change = new WorkspaceChange({ documentChanges: [] });
+    let uri = `file://${this.parent.defaultNotFoundPageFilePath}`;
+    const p = this.parent.pages.find((p) => p.basenameNoExt === "NotFoundPage");
+    if (p) {
+      uri = p.uri;
+      // page already exists, we just need to add the <Route/>
+    } else {
+      change.createFile(uri);
+      change
+        .getTextEditChange({ uri, version: null })
+        .insert(
+          Position.create(0, 0),
+          `export default () => <div>Not Found</div>`
+        );
+    }
+    // add <Route/>
+    const loc = LocationLike_toLocation(this.jsxNode);
+    const lastRoute = this.routes[this.routes.length - 1];
+    const lastRouteLoc = LocationLike_toLocation(lastRoute.jsxNode);
+    const textEditChange = change.getTextEditChange({
+      uri: loc.uri,
+      version: null,
+    });
+    const indent = " ".repeat(lastRouteLoc.range.start.character);
+    textEditChange.insert(
+      lastRouteLoc.range.end,
+      `\n${indent}<Route notfound page={NotFoundPage}/>\n`
+    );
+    return {
+      title: "Create default Not Found Page",
+      edit: change.edit,
+    } as CodeAction;
+  }
+
   *diagnostics() {
     if (!this.fileExists) {
       // should we assign this error to the project? to redwood.toml?
@@ -677,16 +746,26 @@ export class RWRouter extends FileNode {
       return; // stop checking for errors if the file doesn't exist
     }
 
-    // can a Router have zero notfound pages?
-    // TODO: add quickfix for this one
-    // if there are no notfound pages, create one
-    if (this.numNotFoundPages !== 1) {
-      if (this.jsxNode)
-        yield err(
-          this.jsxNode,
-          "You must specify exactly one 'notfound' page",
-          RWError.NOTFOUND_PAGE_NOT_DEFINED
-        );
+    if (!this.jsxNode) return;
+
+    if (this.numNotFoundPages === 0) {
+      const { uri, range } = LocationLike_toLocation(this.jsxNode);
+      yield {
+        uri,
+        diagnostic: {
+          range,
+          message: "You must specify a 'notfound' page",
+          severity: DiagnosticSeverity.Error,
+        },
+        quickFix: async () => this.quickFix_addNotFoundpage,
+      } as ExtendedDiagnostic;
+    } else if (this.numNotFoundPages > 1) {
+      const e = err(
+        this.jsxNode,
+        "You must specify exactly one 'notfound' page",
+        RWError.NOTFOUND_PAGE_NOT_DEFINED
+      );
+      yield e;
     }
   }
   children() {
