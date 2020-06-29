@@ -17,7 +17,7 @@ import {
   Range_contains,
 } from "./x/vscode-languageserver-types";
 
-const UPDATE_DIAGNOSTICS_INTERVAL = 5000;
+const REFRESH_DIAGNOSTICS_INTERVAL = 5000;
 
 class Connection {
   initializeParams!: InitializeParams;
@@ -55,7 +55,10 @@ class Connection {
         return await outlineToJSON(getOutline(project));
       });
       connection.console.log("onInitialized");
-      setInterval(() => this.updateDiagnostics(), UPDATE_DIAGNOSTICS_INTERVAL);
+      setInterval(
+        () => this.refreshDiagnostics(),
+        REFRESH_DIAGNOSTICS_INTERVAL
+      );
       const folders = await connection.workspace.getWorkspaceFolders();
       if (folders) {
         for (const folder of folders) {
@@ -74,10 +77,10 @@ class Connection {
     // The content of a text document has changed. This event is emitted
     // when the text document first opened or when its content has changed.
     documents.onDidChangeContent((change: { document: TextDocument }) => {
-      this.updateDiagnostics();
+      this.refreshDiagnostics();
     });
     connection.onDidChangeWatchedFiles((_change) => {
-      this.updateDiagnostics();
+      this.refreshDiagnostics();
     });
 
     connection.onImplementation(async (params) => {
@@ -102,36 +105,33 @@ class Connection {
       }
     });
 
-    connection.onCodeAction(async (params) => {
-      const {
-        range,
-        context,
-        textDocument: { uri },
-      } = params;
-      const node = await this.getProject()?.findNode(uri);
-      if (!node) return [];
-      if (context.diagnostics.length > 0) {
-        const node_diagnostics = await node.collectDiagnostics();
-        // find matching diagnostics
-        for (const ctx_d of context.diagnostics) {
-          // context contains diagnostics that are currently displayed to the user
-          for (const node_xd of node_diagnostics) {
-            const node_d = node_xd.diagnostic;
-            if (Diagnostic_compare(ctx_d, node_d)) {
-              if (node_xd.quickFix) {
-                const a = await node_xd.quickFix();
-                if (a) {
-                  a.kind = "quickfix";
-                  a.diagnostics = [ctx_d];
-                  return [a];
+    connection.onCodeAction(
+      async ({ range, context, textDocument: { uri } }) => {
+        const node = await this.getProject()?.findNode(uri);
+        if (!node) return [];
+        if (context.diagnostics.length > 0) {
+          // find quick-fixes associated to diagnostics
+          const node_diagnostics = await node.collectDiagnostics();
+          for (const ctx_d of context.diagnostics) {
+            // context contains diagnostics that are currently displayed to the user
+            for (const node_xd of node_diagnostics) {
+              const node_d = node_xd.diagnostic;
+              if (Diagnostic_compare(ctx_d, node_d)) {
+                if (node_xd.quickFix) {
+                  const a = await node_xd.quickFix();
+                  if (a) {
+                    a.kind = "quickfix";
+                    a.diagnostics = [ctx_d];
+                    return [a];
+                  }
                 }
               }
             }
           }
         }
+        return [];
       }
-      return [];
-    });
+    );
 
     // Make the text document manager listen on the connection
     // for open, change and close text document events
@@ -159,18 +159,17 @@ class Connection {
     );
   }
 
-  previousDiagnosticURIs: string[] = [];
+  private refreshDiagnostics_previousURIs: string[] = [];
   @Debounce(1000)
-  async updateDiagnostics() {
+  private async refreshDiagnostics() {
     const project = this.getProject();
     if (project) {
       const ds = await project.collectDiagnostics();
-      //connection.console.log("updateDiagnostics length=" + ds.length);
       const grouped = _.groupBy(ds, (d) => d.uri);
       const dss = _.mapValues(grouped, (xds) => xds.map((xd) => xd.diagnostic));
       const newURIs = Object.keys(dss);
-      const allURIs = newURIs.concat(this.previousDiagnosticURIs);
-      this.previousDiagnosticURIs = newURIs;
+      const allURIs = newURIs.concat(this.refreshDiagnostics_previousURIs);
+      this.refreshDiagnostics_previousURIs = newURIs;
       for (const uri of allURIs) {
         let diagnostics = dss[uri] ?? [];
         this.connection.sendDiagnostics({ uri, diagnostics });
@@ -180,10 +179,3 @@ class Connection {
 }
 
 new Connection();
-
-// const languageTsIDs = [
-//   "javascript",
-//   "javascriptreact",
-//   "typescript",
-//   "typescriptreact",
-// ];
