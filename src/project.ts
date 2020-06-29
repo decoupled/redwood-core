@@ -13,14 +13,23 @@ import { parse as parseTOML } from "toml";
 import * as tsm from "ts-morph";
 import {
   CodeAction,
+  CodeLens,
   DiagnosticSeverity,
   Location,
   Position,
   Range,
   WorkspaceChange,
+  Command,
 } from "vscode-languageserver-types";
 import { RWError } from "./errors";
-import { BaseNode, Definition, FileNode, Host, Implementation } from "./ide";
+import {
+  BaseNode,
+  Definition,
+  FileNode,
+  Host,
+  Implementation,
+  CodeLensX,
+} from "./ide";
 import { graphQLSourceToAST, validateRoutePath } from "./util";
 import {
   basenameNoExt,
@@ -125,7 +134,7 @@ export class RWProject extends BaseNode {
 
   // TODO: move to path helper
   @lazy() get defaultNotFoundPageFilePath() {
-    const ext = this.isTypeScriptProject ? ".tsx" : ".js";
+    const ext = this.isTypeScriptProject ? ".tsx" : ".js"; // or jsx?
     return join(
       this.pathHelper.web.pages,
       "NotFoundPage",
@@ -691,13 +700,24 @@ export class RWRouter extends FileNode {
     return this.routes.filter((r) => r.isNotFound).length;
   }
   *ideInfo() {
-    // if (this.jsxNode) {
-    //   let location = Location_fromNode(this.jsxNode)
-    //   if (this.routes.length > 0) {
-    //     location = Location_fromNode(this.routes[0].jsxNode)
-    //     yield { kind: 'CodeLens', location, text: 'Add Page' } as CodeLens
-    //   }
-    // }
+    if (this.jsxNode) {
+      let location = Location_fromNode(this.jsxNode);
+      if (this.routes.length > 0) {
+        location = Location_fromNode(this.routes[0].jsxNode);
+        const codeLens: CodeLens = {
+          range: location.range,
+          command: Command.create("Create Page...", "redwoodjs/cli", {
+            projectRoot: this.parent.projectRoot,
+            args: { _0: "generate", _1: "page" },
+          }),
+        };
+        yield {
+          kind: "CodeLens",
+          location,
+          codeLens,
+        } as CodeLensX;
+      }
+    }
   }
 
   @lazy() get quickFix_addNotFoundpage() {

@@ -5,7 +5,7 @@ import { Memoize as memo } from "lodash-decorators";
 import * as tsm from "ts-morph";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { DocumentUri, Location } from "vscode-languageserver-types";
+import { DocumentUri, Location, CodeLens } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
 import { basenameNoExt } from "./x/path";
 import { createTSMSourceFile } from "./x/ts-morph";
@@ -24,7 +24,7 @@ export type IDEInfo =
   | Definition
   | Implementation
   | Reference
-  | CodeLens
+  | CodeLensX
   | Hover;
 
 export interface Definition {
@@ -45,10 +45,10 @@ export interface Reference {
   target: Location;
 }
 
-export interface CodeLens {
+export interface CodeLensX {
   kind: "CodeLens";
   location: Location;
-  text: string;
+  codeLens: CodeLens;
 }
 
 export interface Hover {

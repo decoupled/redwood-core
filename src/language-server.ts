@@ -1,7 +1,7 @@
 import { LazyGetter as lazy } from "lazy-get-decorator";
-import _ from "lodash";
 import { Debounce } from "lodash-decorators";
 import {
+  CodeAction,
   createConnection,
   InitializeParams,
   ProposedFeatures,
@@ -12,14 +12,17 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { HostWithDocumentsStore } from "./ide";
 import { getOutline, outlineToJSON } from "./outline";
 import { RWProject } from "./project";
+import { run } from "./redwood-cli-command-runner";
+import { VSCodeWindowMethods_fromConnection } from "./x/vscode";
 import {
-  Diagnostic_compare,
+  ExtendedDiagnostic_findRelevantQuickFixes,
+  ExtendedDiagnostic_groupByUri,
   Range_contains,
 } from "./x/vscode-languageserver-types";
 
 const REFRESH_DIAGNOSTICS_INTERVAL = 5000;
 
-class Connection {
+class Server {
   initializeParams!: InitializeParams;
   documents = new TextDocuments(TextDocument);
   connection = createConnection(ProposedFeatures.all);
@@ -43,6 +46,8 @@ class Connection {
           implementationProvider: true,
           definitionProvider: true,
           codeActionProvider: true,
+          codeLensProvider: { resolveProvider: false },
+          executeCommandProvider: { commands: ["redwoodjs/cli"] },
         },
       };
     });
@@ -54,6 +59,7 @@ class Connection {
         if (!project) return;
         return await outlineToJSON(getOutline(project));
       });
+
       connection.console.log("onInitialized");
       setInterval(
         () => this.refreshDiagnostics(),
@@ -105,33 +111,48 @@ class Connection {
       }
     });
 
-    connection.onCodeAction(
-      async ({ range, context, textDocument: { uri } }) => {
-        const node = await this.getProject()?.findNode(uri);
-        if (!node) return [];
-        if (context.diagnostics.length > 0) {
-          // find quick-fixes associated to diagnostics
-          const node_diagnostics = await node.collectDiagnostics();
-          for (const ctx_d of context.diagnostics) {
-            // context contains diagnostics that are currently displayed to the user
-            for (const node_xd of node_diagnostics) {
-              const node_d = node_xd.diagnostic;
-              if (Diagnostic_compare(ctx_d, node_d)) {
-                if (node_xd.quickFix) {
-                  const a = await node_xd.quickFix();
-                  if (a) {
-                    a.kind = "quickfix";
-                    a.diagnostics = [ctx_d];
-                    return [a];
-                  }
-                }
-              }
+    connection.onCodeAction(async ({ context, textDocument: { uri } }) => {
+      const actions: CodeAction[] = [];
+      const node = await this.getProject()?.findNode(uri);
+      if (!node) return [];
+      if (context.diagnostics.length > 0) {
+        // find quick-fixes associated to diagnostics
+        const xds = await node.collectDiagnostics();
+        for (const xd of xds) {
+          const as = await ExtendedDiagnostic_findRelevantQuickFixes(
+            xd,
+            context
+          );
+          for (const a of as) actions.push(a);
+        }
+      }
+      return actions;
+    });
+
+    connection.onCodeLens(async ({ textDocument: { uri } }) => {
+      const info = await this.collectIDEInfo(uri);
+      return Array.from(
+        (function* () {
+          for (const i of info) {
+            if (i.kind === "CodeLens") {
+              yield i.codeLens;
             }
           }
-        }
-        return [];
+        })()
+      );
+    });
+
+    connection.onExecuteCommand(async (params) => {
+      if (params.command === "redwoodjs/cli") {
+        const { projectRoot, args } = params.arguments![0];
+        const project = new RWProject({ projectRoot, host: this.host });
+        return await run({
+          args,
+          project,
+          window: this.vscodeWindowMethods,
+        });
       }
-    );
+    });
 
     // Make the text document manager listen on the connection
     // for open, change and close text document events
@@ -144,6 +165,9 @@ class Connection {
   getProject() {
     if (!this.projectRoot) return undefined;
     return new RWProject({ projectRoot: this.projectRoot, host: this.host });
+  }
+  get vscodeWindowMethods() {
+    return VSCodeWindowMethods_fromConnection(this.connection);
   }
   async collectIDEInfo(uri: string) {
     const node = await this.getProject()?.findNode(uri);
@@ -165,17 +189,16 @@ class Connection {
     const project = this.getProject();
     if (project) {
       const ds = await project.collectDiagnostics();
-      const grouped = _.groupBy(ds, (d) => d.uri);
-      const dss = _.mapValues(grouped, (xds) => xds.map((xd) => xd.diagnostic));
+      const dss = ExtendedDiagnostic_groupByUri(ds);
       const newURIs = Object.keys(dss);
       const allURIs = newURIs.concat(this.refreshDiagnostics_previousURIs);
       this.refreshDiagnostics_previousURIs = newURIs;
       for (const uri of allURIs) {
-        let diagnostics = dss[uri] ?? [];
+        const diagnostics = dss[uri] ?? [];
         this.connection.sendDiagnostics({ uri, diagnostics });
       }
     }
   }
 }
 
-new Connection();
+new Server();

@@ -1,3 +1,4 @@
+import { groupBy, mapValues } from "lodash";
 import * as tsm from "ts-morph";
 import {
   CodeAction,
@@ -7,6 +8,7 @@ import {
   Location,
   Position,
   Range,
+  CodeActionContext,
 } from "vscode-languageserver-types";
 
 export function Range_contains(range: Range, pos: Position): boolean {
@@ -86,6 +88,34 @@ export function ExtendedDiagnostic_is(x: any): x is ExtendedDiagnostic {
   if (typeof x.uri !== "string") return false;
   if (!Diagnostic.is(x.diagnostic)) return false;
   return true;
+}
+
+export function ExtendedDiagnostic_groupByUri(
+  ds: ExtendedDiagnostic[]
+): { [uri: string]: Diagnostic[] } {
+  const grouped = groupBy(ds, (d) => d.uri);
+  return mapValues(grouped, (xds) => xds.map((xd) => xd.diagnostic));
+}
+
+export async function ExtendedDiagnostic_findRelevantQuickFixes(
+  xd: ExtendedDiagnostic,
+  context: CodeActionContext
+): Promise<CodeAction[]> {
+  // check context to see if any of the context.diagnostics are equivalent
+  for (const ctx_d of context.diagnostics) {
+    const node_d = xd.diagnostic;
+    if (Diagnostic_compare(ctx_d, node_d)) {
+      if (xd.quickFix) {
+        const a = await xd.quickFix();
+        if (a) {
+          a.kind = "quickfix";
+          a.diagnostics = [ctx_d];
+          return [a];
+        }
+      }
+    }
+  }
+  return [];
 }
 
 export function Position_fromTSMorphOffset(
