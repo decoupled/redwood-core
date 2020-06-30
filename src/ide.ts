@@ -7,6 +7,7 @@ import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { CodeLens, Location } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
+import { ArrayLike, ArrayLike_normalize } from "./x/Array";
 import { basenameNoExt } from "./x/path";
 import { createTSMSourceFile_cached } from "./x/ts-morph";
 import { ExtendedDiagnostic } from "./x/vscode-languageserver-types";
@@ -57,21 +58,6 @@ export interface Hover {
   text: string;
 }
 
-export type Many<T> =
-  | T[]
-  | Promise<T[]>
-  | IterableIterator<T>
-  | undefined
-  | void
-  | null;
-
-export async function Many_normalize<T>(x: Many<T>): Promise<T[]> {
-  if (x instanceof Promise) return x;
-  if (x === null) return [];
-  if (typeof x === "undefined") return [];
-  return [...x];
-}
-
 export abstract class BaseNode {
   /**
    * Each node MUST have a unique ID.
@@ -97,33 +83,33 @@ export abstract class BaseNode {
    * Returns the children of this node.
    * Override this.
    */
-  children(): Many<BaseNode> {
+  children(): ArrayLike<BaseNode> {
     return [];
   }
   @memo() private _children() {
-    return Many_normalize(this.children());
+    return ArrayLike_normalize(this.children());
   }
 
   /**
    * Diagnostics for this node (must not include children's diagnostics).
    * Override this.
    */
-  diagnostics(): Many<ExtendedDiagnostic> {
+  diagnostics(): ArrayLike<ExtendedDiagnostic> {
     return [];
   }
   @memo() private _diagnostics() {
-    return Many_normalize(this.diagnostics());
+    return ArrayLike_normalize(this.diagnostics());
   }
 
   /**
    * IDE info for this node.
    * Override this.
    */
-  ideInfo(): Many<IDEInfo> {
+  ideInfo(): ArrayLike<IDEInfo> {
     return [];
   }
   @memo() private _ideInfo() {
-    return Many_normalize(this.ideInfo());
+    return ArrayLike_normalize(this.ideInfo());
   }
 
   @memo()

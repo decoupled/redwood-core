@@ -14,23 +14,24 @@ import * as tsm from "ts-morph";
 import {
   CodeAction,
   CodeLens,
+  Command,
   DiagnosticSeverity,
   Location,
   Position,
   Range,
   WorkspaceChange,
-  Command,
 } from "vscode-languageserver-types";
 import { RWError } from "./errors";
 import {
   BaseNode,
+  CodeLensX,
   Definition,
   FileNode,
   Host,
   Implementation,
-  CodeLensX,
 } from "./ide";
 import { graphQLSourceToAST, validateRoutePath } from "./util";
+import { iter } from "./x/Array";
 import {
   basenameNoExt,
   directoryNameResolver,
@@ -972,8 +973,4 @@ export class RWRoute extends BaseNode {
     }
     return undefined;
   }
-}
-
-function iter<T>(f: () => IterableIterator<T>) {
-  return Array.from(f());
 }

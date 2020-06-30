@@ -1,5 +1,5 @@
 import { basename, resolve } from "path";
-import { DefaultHost, Many_normalize } from "../ide";
+import { DefaultHost } from "../ide";
 import { RWProject } from "../project";
 
 describe("redwood project", () => {

@@ -12,7 +12,7 @@ export function spawnCancellable(
 ): CancellablePromise<SpawnOut> {
   let cp: child_process.ChildProcess;
   const promise = new Promise<SpawnOut>((resolve, reject) => {
-    cp = child_process.spawn(cmd, args, opts);
+    cp = child_process.spawn(cmd, args, opts as any);
     let stderr = "",
       stdout = "";
     cp.stdout!.on("data", (data) => {

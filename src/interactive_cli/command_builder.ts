@@ -106,7 +106,7 @@ class CommandBuilder {
     }
     if (type === "sdl") {
       const modelName = await this.arg_generate_sdl_modelName();
-      const opts = await this.promp_sdl_options();
+      const opts = await this.prompt_sdl_options();
       if (!opts) return;
       // TODO: serialize options
       // services: { type: 'boolean', default: true },
@@ -141,7 +141,7 @@ class CommandBuilder {
     }
     return await this.opts.ui.pickOne(modelNames, msg);
   }
-  async promp_sdl_options(): Promise<
+  async prompt_sdl_options(): Promise<
     Set<"services" | "crud" | "force"> | undefined
   > {
     const opts = await this.opts.ui.pickMany(

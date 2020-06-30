@@ -21,6 +21,7 @@ import {
 } from "./x/vscode-languageserver-types";
 
 const REFRESH_DIAGNOSTICS_INTERVAL = 5000;
+const REFRESH_DIAGNOSTICS_DEBOUNCE = 500;
 
 class Server {
   initializeParams!: InitializeParams;
@@ -189,7 +190,7 @@ class Server {
   }
 
   private refreshDiagnostics_previousURIs: string[] = [];
-  @Debounce(1000)
+  @Debounce(REFRESH_DIAGNOSTICS_DEBOUNCE)
   private async refreshDiagnostics() {
     const project = this.getProject();
     if (project) {
