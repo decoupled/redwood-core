@@ -9,10 +9,10 @@ import {
   TextDocumentSyncKind,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { RWProject } from "./core/RWProject";
 import { HostWithDocumentsStore } from "./ide";
 import { buildAndRunWithVSCodeUI } from "./interactive_cli";
 import { getOutline, outlineToJSON } from "./outline";
-import { RWProject } from "./project";
 import { VSCodeWindowMethods_fromConnection } from "./x/vscode";
 import {
   ExtendedDiagnostic_findRelevantQuickFixes,

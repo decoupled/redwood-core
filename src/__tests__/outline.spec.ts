@@ -1,9 +1,9 @@
 import { resolve } from "path";
+import { RWProject } from "../core/RWProject";
 import { DefaultHost } from "../ide";
 import { findOutlineItemForFile, getOutline, outlineToJSON } from "../outline";
-import { RWProject } from "../project";
 
-describe("redwood project", () => {
+describe("outline", () => {
   it("example-todo-master", async () => {
     const projectRoot = resolve(
       __dirname,

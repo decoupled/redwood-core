@@ -1,6 +1,6 @@
 import { resolve } from "path";
+import { RWProject } from "../core/RWProject";
 import { DefaultHost } from "../ide";
-import { RWProject } from "../project";
 import { build } from "./command_builder";
 import { CLIUI } from "./ui";
 

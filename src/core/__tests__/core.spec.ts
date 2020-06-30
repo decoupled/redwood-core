@@ -1,12 +1,12 @@
 import { basename, resolve } from "path";
-import { DefaultHost } from "../ide";
-import { RWProject } from "../project";
+import { DefaultHost } from "../../ide";
+import { RWProject } from "../RWProject";
 
-describe("redwood project", () => {
+describe("redwood core", () => {
   it("example-todo-master", async () => {
     const projectRoot = resolve(
       __dirname,
-      "../../fixtures/example-todo-master"
+      "../../../fixtures/example-todo-master"
     );
     const project = new RWProject({ projectRoot, host: new DefaultHost() });
 
@@ -42,7 +42,7 @@ describe("redwood project", () => {
   it("example-todo-master-with-errors", async () => {
     const projectRoot = resolve(
       __dirname,
-      "../../fixtures/example-todo-master-with-errors"
+      "../../../fixtures/example-todo-master-with-errors"
     );
     const project = new RWProject({ projectRoot, host: new DefaultHost() });
     const ds = await project.collectDiagnostics();
@@ -58,13 +58,13 @@ describe("redwood project", () => {
   describe("Cells", () => {
     const projectRoot = resolve(
       __dirname,
-      "../../fixtures/example-todo-master-with-errors"
+      "../../../fixtures/example-todo-master-with-errors"
     );
 
     it("Correctly determines a Cell component vs a normal component", () => {
       const projectRoot = resolve(
         __dirname,
-        "../../fixtures/example-todo-master-with-errors"
+        "../../../fixtures/example-todo-master-with-errors"
       );
       const project = new RWProject({ projectRoot, host: new DefaultHost() });
       expect(

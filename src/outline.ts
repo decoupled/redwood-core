@@ -1,5 +1,5 @@
+import { RWProject } from "./core/RWProject";
 import { FileNode } from "./ide";
-import { RWProject } from "./project";
 
 /*
 - all items have icons. in vscode you can create items without icons but

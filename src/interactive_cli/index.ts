@@ -1,4 +1,4 @@
-import { RWProject } from "../project";
+import { RWProject } from "../core/RWProject";
 import { VSCodeWindowMethods } from "../x/vscode";
 import { YargsStyleArgs } from "../x/yargs";
 import { build } from "./command_builder";

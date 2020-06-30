@@ -1,6 +1,6 @@
 import camelcase from "camelcase";
 import { Memoize as memo } from "lodash-decorators";
-import { RWProject } from "../project";
+import { RWProject } from "../core/RWProject";
 import { validateRoutePath } from "../util";
 import { YargsStyleArgs } from "../x/yargs";
 import { UI } from "./ui";

@@ -1,9 +1,9 @@
 import { Box, Color, Text } from "ink";
 import React, { useMemo } from "react";
 import { useAsync } from "react-async-hook";
+import { RWProject } from "./core/RWProject";
 import { DefaultHost } from "./ide";
 import { getOutline, OutlineItem } from "./outline";
-import { RWProject } from "./project";
 import {
   ExtendedDiagnostic,
   LocationLike_toLink,
