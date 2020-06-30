@@ -8,7 +8,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { CodeLens, Location } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
 import { basenameNoExt } from "./x/path";
-import { createTSMSourceFile } from "./x/ts-morph";
+import { createTSMSourceFile_cached } from "./x/ts-morph";
 import { ExtendedDiagnostic } from "./x/vscode-languageserver-types";
 
 export type NodeID = string;
@@ -197,7 +197,7 @@ export abstract class FileNode extends BaseNode {
   @lazy() get sf(): tsm.SourceFile {
     if (typeof this.text === "undefined")
       throw new Error("undefined file " + this.filePath);
-    return createTSMSourceFile(this.filePath, this.text!);
+    return createTSMSourceFile_cached(this.filePath, this.text!);
   }
   @lazy() get basenameNoExt() {
     return basenameNoExt(this.filePath);

@@ -1,4 +1,8 @@
+import * as crypto from "crypto";
+import { memoize } from "lodash";
+import LRU from "lru-cache";
 import * as tsm from "ts-morph";
+
 export function createTSMSourceFile(
   filePath: string,
   src: string
@@ -25,4 +29,27 @@ export function createTSMSourceFile(a1: string, a2?: string): tsm.SourceFile {
       noResolve: true,
     },
   }).createSourceFile(filePath, src);
+}
+
+const getCache = memoize(() => new LRU<string, tsm.SourceFile>(200));
+
+/**
+ * warning: do NOT modify this file. treat it as immutable
+ * @param filePath
+ * @param text
+ */
+export function createTSMSourceFile_cached(
+  filePath: string,
+  text: string
+): tsm.SourceFile {
+  const key = filePath + "\n" + text;
+  const cache = getCache();
+  const key2 = crypto.createHash("sha1").update(key).digest("base64");
+  if (cache.has(key2)) {
+    return cache.get(key2)!;
+  } else {
+    const sf = createTSMSourceFile(filePath, text);
+    cache.set(key2, sf);
+    return sf;
+  }
 }
