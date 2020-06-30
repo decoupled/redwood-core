@@ -1,8 +1,8 @@
-import { build } from "./command_builder";
-import { CLIUI } from "./ui";
-import { RWProject } from "../project";
 import { resolve } from "path";
 import { DefaultHost } from "../ide";
+import { RWProject } from "../project";
+import { build } from "./command_builder";
+import { CLIUI } from "./ui";
 
 async function test() {
   const ui = new CLIUI();

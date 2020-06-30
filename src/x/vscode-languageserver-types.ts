@@ -2,13 +2,13 @@ import { groupBy, mapValues } from "lodash";
 import * as tsm from "ts-morph";
 import {
   CodeAction,
+  CodeActionContext,
   Diagnostic,
   DiagnosticSeverity,
   DocumentUri,
   Location,
   Position,
   Range,
-  CodeActionContext,
 } from "vscode-languageserver-types";
 
 export function Range_contains(range: Range, pos: Position): boolean {

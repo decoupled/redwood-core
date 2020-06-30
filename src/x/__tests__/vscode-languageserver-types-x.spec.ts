@@ -1,8 +1,5 @@
 import { Position, Range } from "vscode-languageserver-types";
-import {
-  Position_compare,
-  Range_contains,
-} from "../vscode-languageserver-types";
+import { Position_compare, Range_contains } from "../vscode-languageserver-types";
 
 describe("Position_compare", () => {
   it("", async () => {

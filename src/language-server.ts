@@ -1,24 +1,13 @@
 import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Debounce } from "lodash-decorators";
-import {
-  CodeAction,
-  createConnection,
-  InitializeParams,
-  ProposedFeatures,
-  TextDocuments,
-  TextDocumentSyncKind,
-} from "vscode-languageserver";
+import { CodeAction, createConnection, InitializeParams, ProposedFeatures, TextDocuments, TextDocumentSyncKind } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { HostWithDocumentsStore } from "./ide";
 import { buildAndRunWithVSCodeUI } from "./interactive_cli";
 import { getOutline, outlineToJSON } from "./outline";
 import { RWProject } from "./project";
 import { VSCodeWindowMethods_fromConnection } from "./x/vscode";
-import {
-  ExtendedDiagnostic_findRelevantQuickFixes,
-  ExtendedDiagnostic_groupByUri,
-  Range_contains,
-} from "./x/vscode-languageserver-types";
+import { ExtendedDiagnostic_findRelevantQuickFixes, ExtendedDiagnostic_groupByUri, Range_contains } from "./x/vscode-languageserver-types";
 
 const REFRESH_DIAGNOSTICS_INTERVAL = 5000;
 const REFRESH_DIAGNOSTICS_DEBOUNCE = 500;

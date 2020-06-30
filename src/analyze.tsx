@@ -1,4 +1,4 @@
-import { Box, render, Text, Color } from "ink";
+import { Box, Color, render, Text } from "ink";
 import { resolve } from "path";
 import React from "react";
 import { DiagnosticsUI, OutlineUI, useProject } from "./ui";

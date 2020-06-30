@@ -1,7 +1,7 @@
-import { basename, resolve } from "path";
+import { resolve } from "path";
 import { DefaultHost } from "../ide";
+import { findOutlineItemForFile, getOutline, outlineToJSON } from "../outline";
 import { RWProject } from "../project";
-import { getOutline, findOutlineItemForFile, outlineToJSON } from "../outline";
 
 describe("redwood project", () => {
   it("example-todo-master", async () => {

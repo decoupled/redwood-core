@@ -1,7 +1,6 @@
 import { outputFileSync } from "fs-extra";
 import proxyquire from "proxyquire";
 import { spawnCancellable } from "../x/child_process";
-import { relative, dirname } from "path";
 
 type FileOverrides = { [filePath: string]: string };
 
