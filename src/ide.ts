@@ -5,7 +5,7 @@ import { Memoize as memo } from "lodash-decorators";
 import * as tsm from "ts-morph";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { DocumentUri, Location, CodeLens } from "vscode-languageserver-types";
+import { CodeLens, Location } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
 import { basenameNoExt } from "./x/path";
 import { createTSMSourceFile } from "./x/ts-morph";
@@ -56,33 +56,6 @@ export interface Hover {
   location: Location;
   text: string;
 }
-
-export type QuickFix = QuickFixEdits | CLICommand;
-
-/**
- * A very simple representation of a quickfix that changes files
- * filePath --> newContent | undefined
- * undefined will remove the file
- */
-export type QuickFixEdits = Map<string, string | undefined>;
-
-export type CLICommand = string;
-
-export type Action = DocumentUri | Location | CLIAction | (() => {});
-
-// export type OutlineIcon =
-//   | "redwood"
-//   | "netlify"
-//   | "page"
-//   | "page-private"
-//   | "route"
-//   | "route-private";
-
-/**
- * A command to send the redwood CLI
- * ex: "generate page"
- */
-export type CLIAction = string;
 
 export type Many<T> =
   | T[]

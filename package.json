@@ -23,6 +23,7 @@
     "@types/react": "^16.9.36",
     "camelcase": "^6.0.0",
     "deepmerge": "^4.2.2",
+    "enquirer": "^2.3.5",
     "findup-sync": "^4.0.0",
     "graphql": "^15.1.0",
     "ink": "^2.7.1",

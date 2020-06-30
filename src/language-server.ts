@@ -10,9 +10,9 @@ import {
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { HostWithDocumentsStore } from "./ide";
+import { buildAndRunWithVSCodeUI } from "./interactive_cli";
 import { getOutline, outlineToJSON } from "./outline";
 import { RWProject } from "./project";
-import { run } from "./redwood-cli-command-runner";
 import { VSCodeWindowMethods_fromConnection } from "./x/vscode";
 import {
   ExtendedDiagnostic_findRelevantQuickFixes,
@@ -144,12 +144,14 @@ class Server {
 
     connection.onExecuteCommand(async (params) => {
       if (params.command === "redwoodjs/cli") {
-        const { projectRoot, args } = params.arguments![0];
-        const project = new RWProject({ projectRoot, host: this.host });
-        return await run({
+        let { projectRoot, args } = params.arguments![0];
+        //args = { _0: "generate", _1: "sdl" };
+        const { vscodeWindowMethods, host } = this;
+        const project = new RWProject({ projectRoot, host });
+        return await buildAndRunWithVSCodeUI({
           args,
           project,
-          window: this.vscodeWindowMethods,
+          vscodeWindowMethods,
         });
       }
     });
