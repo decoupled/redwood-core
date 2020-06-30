@@ -1,5 +1,3 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
-import { Debounce } from "lodash-decorators";
 import {
   CodeAction,
   createConnection,
@@ -13,6 +11,8 @@ import { RWProject } from "./core/RWProject";
 import { HostWithDocumentsStore } from "./ide";
 import { buildAndRunWithVSCodeUI } from "./interactive_cli";
 import { getOutline, outlineToJSON } from "./outline";
+import { iter } from "./x/Array";
+import { debounce, lazy } from "./x/decorators";
 import { VSCodeWindowMethods_fromConnection } from "./x/vscode";
 import {
   ExtendedDiagnostic_findRelevantQuickFixes,
@@ -132,15 +132,9 @@ class Server {
 
     connection.onCodeLens(async ({ textDocument: { uri } }) => {
       const info = await this.collectIDEInfo(uri);
-      return Array.from(
-        (function* () {
-          for (const i of info) {
-            if (i.kind === "CodeLens") {
-              yield i.codeLens;
-            }
-          }
-        })()
-      );
+      return iter(function* () {
+        for (const i of info) if (i.kind === "CodeLens") yield i.codeLens;
+      });
     });
 
     connection.onExecuteCommand(async (params) => {
@@ -190,7 +184,7 @@ class Server {
   }
 
   private refreshDiagnostics_previousURIs: string[] = [];
-  @Debounce(REFRESH_DIAGNOSTICS_DEBOUNCE)
+  @debounce(REFRESH_DIAGNOSTICS_DEBOUNCE)
   private async refreshDiagnostics() {
     const project = this.getProject();
     if (project) {

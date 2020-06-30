@@ -1,5 +1,5 @@
-import { Memoize as memo } from "lodash-decorators";
 import { RWProject } from "../core/RWProject";
+import { memo } from "../x/decorators";
 import { VSCodeWindowMethods } from "../x/vscode";
 
 export interface Opts {

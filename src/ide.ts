@@ -1,13 +1,12 @@
 import * as fs from "fs-extra";
 import glob from "glob";
-import { LazyGetter as lazy } from "lazy-get-decorator";
-import { Memoize as memo } from "lodash-decorators";
 import * as tsm from "ts-morph";
 import { TextDocuments } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { CodeLens, Location } from "vscode-languageserver-types";
 import { OutlineItem } from "./outline";
 import { ArrayLike, ArrayLike_normalize } from "./x/Array";
+import { lazy, memo } from "./x/decorators";
 import { basenameNoExt } from "./x/path";
 import { createTSMSourceFile_cached } from "./x/ts-morph";
 import { ExtendedDiagnostic } from "./x/vscode-languageserver-types";

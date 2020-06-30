@@ -1,10 +1,10 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
 import { basename } from "path";
 import * as tsm from "ts-morph";
 import { Location } from "vscode-languageserver-types";
 import { RWError } from "../errors";
 import { BaseNode, Definition } from "../ide";
 import { validateRoutePath } from "../util";
+import { lazy } from "../x/decorators";
 import {
   err,
   LocationLike_toLink,

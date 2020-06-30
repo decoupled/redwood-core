@@ -1,5 +1,3 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
-import { Memoize as memo } from "lodash-decorators";
 import * as tsm from "ts-morph";
 import {
   CodeAction,
@@ -12,6 +10,7 @@ import {
 import { RWError } from "../errors";
 import { CodeLensX, FileNode } from "../ide";
 import { iter } from "../x/Array";
+import { lazy, memo } from "../x/decorators";
 import {
   err,
   ExtendedDiagnostic,

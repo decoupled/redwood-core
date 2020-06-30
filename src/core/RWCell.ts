@@ -1,7 +1,7 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
 import * as tsm from "ts-morph";
 import { DiagnosticSeverity } from "vscode-languageserver-types";
 import { graphQLSourceToAST } from "../util";
+import { lazy } from "../x/decorators";
 import {
   err,
   ExtendedDiagnostic,

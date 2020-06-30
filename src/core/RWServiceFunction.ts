@@ -1,8 +1,8 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
 import * as tsm from "ts-morph";
 import { DiagnosticSeverity } from "vscode-languageserver-types";
 import { BaseNode } from "../ide";
 import { iter } from "../x/Array";
+import { lazy } from "../x/decorators";
 import {
   ExtendedDiagnostic,
   Location_fromNode,

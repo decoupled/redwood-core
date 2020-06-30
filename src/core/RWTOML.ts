@@ -1,7 +1,7 @@
-import { LazyGetter as lazy } from "lazy-get-decorator";
 import { parse as parseTOML } from "toml";
 import { Range } from "vscode-languageserver-types";
 import { FileNode } from "../ide";
+import { lazy } from "../x/decorators";
 import { err } from "../x/vscode-languageserver-types";
 import { RWProject } from "./RWProject";
 

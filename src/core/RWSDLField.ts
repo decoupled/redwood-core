@@ -2,7 +2,6 @@ import {
   FieldDefinitionNode,
   ObjectTypeDefinitionNode,
 } from "graphql/language/ast";
-import { LazyGetter as lazy } from "lazy-get-decorator";
 import {
   CodeAction,
   DiagnosticSeverity,
@@ -12,6 +11,7 @@ import {
 } from "vscode-languageserver-types";
 import { RWError } from "../errors";
 import { BaseNode, Implementation } from "../ide";
+import { lazy } from "../x/decorators";
 import {
   ExtendedDiagnostic,
   Location_fromNode,
