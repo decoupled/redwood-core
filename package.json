@@ -12,7 +12,8 @@
     "change": "beachball change",
     "gen": "plop",
     "analyze": "ts-node --transpile-only src/analyze.tsx",
-    "format": "prettier --write ./src/**/*.{ts,tsx}"
+    "format": "prettier --write ./src/**/*.{ts,tsx}",
+    "interactive-redwood-cli-example": "ts-node --transpile-only src/interactive_cli/sandbox_builder_with_cliui.ts"
   },
   "dependencies": {
     "@babel/plugin-proposal-decorators": "^7.10.1",

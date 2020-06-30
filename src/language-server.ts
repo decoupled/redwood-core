@@ -144,7 +144,10 @@ class Server {
 
     connection.onExecuteCommand(async (params) => {
       if (params.command === "redwoodjs/cli") {
-        let { projectRoot, args } = params.arguments![0];
+        let argss = { projectRoot: this.projectRoot!, args: {} };
+        if (params.arguments && params.arguments.length > 0)
+          argss = params.arguments[0];
+        let { projectRoot, args } = argss;
         //args = { _0: "generate", _1: "sdl" };
         const { vscodeWindowMethods, host } = this;
         const project = new RWProject({ projectRoot, host });
