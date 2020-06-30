@@ -12,7 +12,7 @@
     "change": "beachball change",
     "gen": "plop",
     "analyze": "ts-node --transpile-only src/analyze.tsx",
-    "format": "organize-imports-cli ./tsconfig.json && prettier --write ./src/**/*.{ts,tsx}",
+    "format": "organize-imports-cli ./tsconfig.json && prettier --config ./prettier.config.js  --write './src/**/*.{ts,tsx}'",
     "interactive-redwood-cli-example": "ts-node --transpile-only src/interactive_cli/sandbox_builder_with_cliui.ts"
   },
   "dependencies": {
