@@ -20,8 +20,9 @@ export class RWTOML extends FileNode {
     try {
       this.parsedTOML;
     } catch (e) {
-      const pos = { line: e.line, character: e.column };
+      const pos = { line: e.line - 1, character: e.column - 1 };
       const range = Range.create(pos, pos);
+      // Forward the TOML parse error with correct location information
       yield err({ uri: this.uri, range }, "TOML Parser Error: " + e.message);
       return;
     }
