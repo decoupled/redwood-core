@@ -8,4 +8,6 @@ module.exports = {
   // once this project is ready to be merged into redwood/internal, we can reformat
   semi: true,
   singleQuote: false,
+  printWidth: 80,
+  parser: "typescript",
 };

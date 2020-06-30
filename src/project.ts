@@ -1,20 +1,54 @@
 import { getDMMF } from "@prisma/sdk";
 // TODO: re-implement a higher quality version of these in ./project
 import { getPaths, processPagesDir } from "@redwoodjs/internal/dist/paths";
-import { FieldDefinitionNode, ObjectTypeDefinitionNode } from "graphql/language/ast";
+import {
+  FieldDefinitionNode,
+  ObjectTypeDefinitionNode,
+} from "graphql/language/ast";
 import { parse as parseGraphQL } from "graphql/language/parser";
 import { LazyGetter as lazy } from "lazy-get-decorator";
 import { Memoize as memo } from "lodash-decorators";
 import { basename, dirname, join } from "path";
 import { parse as parseTOML } from "toml";
 import * as tsm from "ts-morph";
-import { CodeAction, CodeLens, Command, DiagnosticSeverity, Location, Position, Range, WorkspaceChange } from "vscode-languageserver-types";
+import {
+  CodeAction,
+  CodeLens,
+  Command,
+  DiagnosticSeverity,
+  Location,
+  Position,
+  Range,
+  WorkspaceChange,
+} from "vscode-languageserver-types";
 import { RWError } from "./errors";
-import { BaseNode, CodeLensX, Definition, FileNode, Host, Implementation } from "./ide";
+import {
+  BaseNode,
+  CodeLensX,
+  Definition,
+  FileNode,
+  Host,
+  Implementation,
+} from "./ide";
 import { graphQLSourceToAST, validateRoutePath } from "./util";
 import { iter } from "./x/Array";
-import { basenameNoExt, directoryNameResolver, followsDirNameConvention, isCellFileName, isLayoutFileName } from "./x/path";
-import { err, ExtendedDiagnostic, LocationLike_toLink, LocationLike_toLocation, Location_fromFilePath, Location_fromNode, Position_fromTSMorphOffset, Range_fromNode } from "./x/vscode-languageserver-types";
+import {
+  basenameNoExt,
+  directoryNameResolver,
+  followsDirNameConvention,
+  isCellFileName,
+  isLayoutFileName,
+} from "./x/path";
+import {
+  err,
+  ExtendedDiagnostic,
+  LocationLike_toLink,
+  LocationLike_toLocation,
+  Location_fromFilePath,
+  Location_fromNode,
+  Position_fromTSMorphOffset,
+  Range_fromNode,
+} from "./x/vscode-languageserver-types";
 
 export interface RWProjectOptions {
   projectRoot: string;
