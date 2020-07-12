@@ -1,4 +1,7 @@
-Note: This will eventually be moved to @redwoodjs/internal.
+# This repository has been merged into [Redwood.js](https://github.com/redwoodjs/redwood)
+It is now called [@redwoodjs/structure](https://github.com/redwoodjs/redwood/tree/main/packages/structure)
+
+---
 
 # Overview
 
